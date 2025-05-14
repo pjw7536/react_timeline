@@ -1,0 +1,28 @@
+.timeline-container {
+    margin-bottom: 16px;
+  }
+  
+  .range-timeline .timeline {
+    height: 100px;
+    background-color: #e5e7eb;
+  }
+  
+  .point-timeline .timeline {
+    height: 150px;
+    background-color: #f3f4f6;
+  }
+  
+  .vis-item.bg-red-500 {
+    background-color: #ef4444;
+    border-color: #b91c1c;
+  }
+  
+  .vis-item.bg-green-500 {
+    background-color: #22c55e;
+    border-color: #15803d;
+  }
+  
+  .vis-item.selected {
+    border: 2px solid #f59e0b;
+  }
+  
