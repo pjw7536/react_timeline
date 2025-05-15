@@ -1,28 +1,16 @@
+/* vis-timeline 전용 커스텀 */
 .timeline-container {
-    margin-bottom: 16px;
-  }
-  
-  .range-timeline .timeline {
-    height: 100px;
-    background-color: #e5e7eb;
-  }
-  
-  .point-timeline .timeline {
-    height: 150px;
-    background-color: #f3f4f6;
-  }
-  
-  .vis-item.bg-red-500 {
-    background-color: #ef4444;
-    border-color: #b91c1c;
-  }
-  
-  .vis-item.bg-green-500 {
-    background-color: #22c55e;
-    border-color: #15803d;
-  }
-  
-  .vis-item.selected {
-    border: 2px solid #f59e0b;
-  }
-  
+  margin-bottom: 16px;
+}
+
+
+/* tailwind 색상과 매칭 */
+.vis-item.bg-red-500    { background-color:#ef4444; border-color:#b91c1c; }
+.vis-item.bg-green-500  { background-color:#22c55e; border-color:#15803d; }
+.vis-item.bg-blue-500   { background-color:#3b82f6; border-color:#1d4ed8; }
+/* …필요 색상 추가 */
+
+/* 선택 시 테두리 */
+.vis-item.selected {
+  border: 2px solid #f59e0b; /* amber-500 */
+}

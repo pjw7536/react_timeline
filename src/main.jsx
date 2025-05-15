@@ -1,12 +1,19 @@
-//src/main.jsx
 import React from "react";
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { StrictMode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TimelineProvider } from "./context/TimelineProvider";
+import App from "./App";
 import "./index.css";
-import App from "./App.jsx";
+
+const qc = new QueryClient();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={qc}>
+      <TimelineProvider>
+        <App />
+      </TimelineProvider>
+    </QueryClientProvider>
   </StrictMode>
 );
