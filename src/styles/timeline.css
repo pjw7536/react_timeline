@@ -1,3 +1,7 @@
+
+@import "tailwindcss";
+
+ /* src/index.css */
 /* vis-timeline 전용 커스텀 */
 .timeline-container {
   margin-bottom: 16px;
@@ -5,12 +9,13 @@
 
 
 /* tailwind 색상과 매칭 */
-.vis-item.bg-red-500    { background-color:#ef4444; border-color:#b91c1c; }
-.vis-item.bg-green-500  { background-color:#22c55e; border-color:#15803d; }
-.vis-item.bg-blue-500   { background-color:#3b82f6; border-color:#1d4ed8; }
+.vis-item.bg-red-500    { @apply bg-red-500 border-red-600; }
+.vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
+.vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
+.vis-item.bg-yellow-500 { @apply bg-yellow-500 border-yellow-600; }
 /* …필요 색상 추가 */
 
 /* 선택 시 테두리 */
 .vis-item.selected {
-  border: 2px solid #f59e0b; /* amber-500 */
+  @apply border-2 border-amber-500;
 }

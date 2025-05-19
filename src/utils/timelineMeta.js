@@ -3,8 +3,8 @@ export const groupConfig = {
     type: "range",
     options: { stack: false, zoomMin: 1000 * 60 * 30 },
     stateColors: {
-      RUN: "bg-green-500 border-green-600",
-      IDLE: "bg-yellow-400 border-yellow-500",
+      RUN: "bg-blue-500 border-blue-500",
+      IDLE: "bg-yellow-500",
     },
     columns: {
       time: "timestamp",
@@ -21,7 +21,7 @@ export const groupConfig = {
       height: "400px",
     },
     stateColors: {
-      OPEN: "bg-green-500 border-green-600",
+      OPEN: "bg-blue-500 border-blue-600",
       CLOSE: "bg-red-500 border-red-600",
     },
     columns: {
