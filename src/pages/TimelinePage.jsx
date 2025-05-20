@@ -148,54 +148,53 @@ const TimelinePage = () => {
             )}
           </div>
 
-          {/* 오른쪽 컬럼: 필터 및 통합 데이터 로그 */}
+          {/* 오른쪽 컬럼: 필터 + 통합 데이터 로그 (하나의 카드로 합침) */}
           <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3">
-            {/* 데이터 필터 카드 */}
-            <div className="p-6 bg-white dark:bg-slate-800 shadow-lg rounded-xl">
-              <h4 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">
-                데이터 필터
-              </h4>
-              <div className="space-y-2">
-                {Object.keys(DATA_TYPES).map((typeKey) => (
-                  <label
-                    key={typeKey}
-                    className="flex items-center space-x-3 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      name={DATA_TYPES[typeKey]}
-                      checked={typeFilters[DATA_TYPES[typeKey]]}
-                      onChange={handleFilterChange}
-                      className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
-                    />
-                    <span className="text-slate-700 dark:text-slate-300 select-none">
-                      {typeKey}
-                    </span>
-                  </label>
-                ))}
+            {/* 통합 데이터 로그 + 필터 카드 */}
+            <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden flex-grow min-h-[400px] flex flex-col">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+                <h4 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">
+                  통합 데이터 로그
+                </h4>
+                {/* 필터 체크박스: 테이블 상단에 위치 */}
+                <div className="space-x-4 mb-2 flex flex-wrap">
+                  {Object.keys(DATA_TYPES).map((typeKey) => (
+                    <label
+                      key={typeKey}
+                      className="inline-flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        name={DATA_TYPES[typeKey]}
+                        checked={typeFilters[DATA_TYPES[typeKey]]}
+                        onChange={handleFilterChange}
+                        className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
+                      />
+                      <span className="text-slate-700 dark:text-slate-300 select-none">
+                        {typeKey}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-grow">
+                {/* eqpId가 선택되었고 로딩이 끝나야 테이블을 보여줍니다. */}
+                {eqpId && !isLoading && (
+                  <CombinedDataTable data={filteredData} />
+                )}
+                {/* EQP 선택 안됐거나 로딩중일 때 오른쪽 패널에 플레이스홀더 역할 */}
+                {(!eqpId || isLoading) && (
+                  <div className="flex items-center justify-center h-full min-h-[300px]">
+                    {!eqpId && !isLoading && (
+                      <p className="text-slate-600 dark:text-slate-400">
+                        EQP 선택 시 데이터 표시
+                      </p>
+                    )}
+                    {isLoading && <LoadingSpinner />}
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* 통합 데이터 로그 카드 */}
-            {/* eqpId가 선택되었고 로딩이 끝나야 테이블을 보여줍니다. */}
-            {eqpId && !isLoading && (
-              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden flex-grow min-h-[400px]">
-                {" "}
-                {/* 최소 높이 및 flex-grow */}
-                <CombinedDataTable data={filteredData} />
-              </div>
-            )}
-            {/* EQP 선택 안됐거나 로딩중일 때 오른쪽 패널에 플레이스홀더 역할 */}
-            {(!eqpId || isLoading) && (
-              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl flex-grow min-h-[400px] flex items-center justify-center">
-                {!eqpId && !isLoading && (
-                  <p className="text-slate-600 dark:text-slate-400">
-                    EQP 선택 시 데이터 표시
-                  </p>
-                )}
-                {isLoading && <LoadingSpinner />}
-              </div>
-            )}
           </div>
         </div>
       </div>
