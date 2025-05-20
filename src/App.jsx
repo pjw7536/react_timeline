@@ -16,7 +16,7 @@ function App() {
       {" "}
       {/* BrowserRouter는 main.jsx에서 이미 적용되었습니다. */}
       <Navbar /> {/* Navbar를 모든 페이지 상단에 렌더링합니다. */}
-      <div className="container mx-auto">
+      <div className="mx-auto w-full">
         <Routes>
           {" "}
           {/* Routes로 Route들을 감싸줍니다. */}

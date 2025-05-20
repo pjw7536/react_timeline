@@ -63,7 +63,7 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
           <option
             key={e.id}
             value={e.id}
-            className="dark:bg-slate-700 dark:text-slate-100"
+            className="dark:bg-slate-700 dark:text-slate-100 text-slate-500 bg-white"
           >
             {e.name}
           </option>

@@ -103,13 +103,13 @@ const TimelinePage = () => {
         {" "}
         {/* 페이지 전체 너비 사용 */}
         {/* 메인 컨텐츠 영역: 좌(설비 선택 + 타임라인), 우(필터 + 테이블) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* 왼쪽 컬럼: 설비 선택 및 타임라인 보드 */}
-          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
             {/* 상단 제목 및 설비 선택 영역 */}
             <div className="p-6 bg-white dark:bg-slate-800 shadow-lg rounded-xl">
               <div className="flex items-center mb-5">
-                <ChartBarIcon className="size-8 text-indigo-600 dark:text-indigo-400 mr-3" />
+                <ChartBarIcon className="size-8 text-indigo-600 dark:text-indigo-400 dark:fill-current mr-3" />
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">
                   EQP 타임라인 뷰어
                 </h1>
@@ -149,13 +149,13 @@ const TimelinePage = () => {
           </div>
 
           {/* 오른쪽 컬럼: 필터 및 통합 데이터 로그 */}
-          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3">
             {/* 데이터 필터 카드 */}
             <div className="p-6 bg-white dark:bg-slate-800 shadow-lg rounded-xl">
               <h4 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">
                 데이터 필터
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {Object.keys(DATA_TYPES).map((typeKey) => (
                   <label
                     key={typeKey}
@@ -169,7 +169,7 @@ const TimelinePage = () => {
                       className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
                     />
                     <span className="text-slate-700 dark:text-slate-300 select-none">
-                      {typeKey} 데이터 보기
+                      {typeKey}
                     </span>
                   </label>
                 ))}
@@ -189,7 +189,7 @@ const TimelinePage = () => {
             {(!eqpId || isLoading) && (
               <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl flex-grow min-h-[400px] flex items-center justify-center">
                 {!eqpId && !isLoading && (
-                  <p className="text-slate-400 dark:text-slate-500">
+                  <p className="text-slate-600 dark:text-slate-400">
                     EQP 선택 시 데이터 표시
                   </p>
                 )}

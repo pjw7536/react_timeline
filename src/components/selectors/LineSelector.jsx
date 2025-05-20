@@ -31,7 +31,7 @@ const LineSelector = ({ lineId, setLineId }) => {
           <option
             key={l.id}
             value={l.id}
-            className="dark:bg-slate-700 dark:text-slate-100"
+            className="dark:bg-slate-700 dark:text-slate-100 text-slate-500 bg-white"
           >
             {l.name}
           </option>

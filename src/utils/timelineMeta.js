@@ -15,10 +15,10 @@ export const groupConfig = {
   STEP: {
     type: "range",
     options: {
-      stack: true,
+      stack: false,
       zoomMax: 1000 * 60 * 60 * 24 * 14,
       align: "center",
-      height: "400px",
+      height: "100px",
     },
     stateColors: {
       OPEN: "bg-blue-500 border-blue-600",

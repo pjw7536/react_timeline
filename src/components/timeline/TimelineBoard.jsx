@@ -40,7 +40,7 @@ const TimelineBoard = ({ eqpId }) => {
   // 4. 타임라인 렌더링
   // 계산된 range와 각 데이터를 props로 전달하여 3개의 타임라인 컴포넌트를 렌더링합니다.
   return (
-    <div className="mt-6">
+    <div className="mt-6 w-full">
       {" "}
       {/* Tailwind CSS 클래스로 위쪽 마진을 줍니다. */}
       {/* RUN 상태를 표시하는 RangeTimeline */}

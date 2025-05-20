@@ -13,7 +13,42 @@
 .vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
 .vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
 .vis-item.bg-yellow-500 { @apply bg-yellow-500 border-yellow-600; }
-/* …필요 색상 추가 */
+
+.vis-item {
+  color: #334155; /* Tailwind의 slate-800에 해당 */
+}
+
+.vis-item.bg-red-500 {
+  @apply bg-red-500 border-red-600;
+}
+
+.vis-item.bg-green-500 {
+  @apply bg-green-500 border-green-600;
+}
+
+.vis-item.bg-blue-500 {
+  @apply bg-blue-500 border-blue-600;
+}
+
+.vis-item.bg-yellow-500 {
+  @apply bg-yellow-500 border-yellow-600;
+}
+
+.dark .vis-item {
+  color: #f1f5f9; /* Tailwind의 slate-100에 해당 */
+}
+
+/* 다크모드: vis-timeline x축(시간축) 텍스트 색상 */
+.dark .vis-time-axis .vis-text,
+.dark .vis-time-axis .vis-label {
+  color: #f1f5f9 !important; /* Tailwind slate-100 */
+}
+
+/* 라이트모드(기본)도 명시적으로 지정 가능 */
+.vis-time-axis .vis-text,
+.vis-time-axis .vis-label {
+  color: #334155; /* Tailwind slate-800 */
+}
 
 /* 선택 시 테두리 */
 .vis-item.selected {

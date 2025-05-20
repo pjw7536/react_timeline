@@ -99,7 +99,7 @@ export default function Navbar() {
 
   return (
     // 헤더 배경 및 텍스트 색상 다크모드 적용
-    <header className="bg-gray-100 dark:bg-gray-900 shadow-md sticky top-0 z-50">
+    <header className="bg-gray-100 dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <nav
         aria-label="Global"
         className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"

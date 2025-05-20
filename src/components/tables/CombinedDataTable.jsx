@@ -42,7 +42,7 @@ const CombinedDataTable = ({ data }) => {
           {data.map((item, index) => (
             <tr
               key={index}
-              className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
             >
               {columns.map((col) => (
                 <td key={col.accessor} className="px-6 py-4 whitespace-nowrap">
