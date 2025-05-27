@@ -166,29 +166,26 @@ const TimelinePage = () => {
           </div>
 
           {/* 오른쪽 컬럼: 필터 및 통합 데이터 로그 */}
-          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4 min-h-0">
-            {/* 데이터 타입 필터 카드 */}
-            <div className="p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl border border-slate-200 dark:border-slate-700 flex-shrink-0">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  데이터 필터
-                </h4>
-              </div>
-              {/* 필터 체크박스 그룹을 수평으로 배치 */}
-              <div className="flex flex-wrap gap-3">
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3">
+            {/* 데이터 필터 카드 */}
+            <div className="p-6 bg-white dark:bg-slate-800 shadow-lg rounded-xl">
+              <h4 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">
+                데이터 필터
+              </h4>
+              <div className="space-y-2">
                 {Object.keys(DATA_TYPES).map((typeKey) => (
                   <label
                     key={typeKey}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className="flex items-center space-x-3 cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       name={DATA_TYPES[typeKey]}
                       checked={typeFilters[DATA_TYPES[typeKey]]}
                       onChange={handleFilterChange}
-                      className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
+                      className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
                     />
-                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300 select-none group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    <span className="text-slate-700 dark:text-slate-300 select-none">
                       {typeKey}
                     </span>
                   </label>
@@ -196,24 +193,26 @@ const TimelinePage = () => {
               </div>
             </div>
 
-            {/* 통합 데이터 테이블 - overflow-auto 적용 */}
-            <div className="flex-1 min-h-0 overflow-auto">
-              {eqpId && !isLoading ? (
-                <div className="h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
-                  <CombinedDataTable data={filteredData} />
-                </div>
-              ) : (
-                <div className="h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl flex items-center justify-center">
-                  {!eqpId && !isLoading ? (
-                    <p className="text-slate-600 dark:text-slate-400">
-                      EQP 선택 시 데이터 표시
-                    </p>
-                  ) : (
-                    <LoadingSpinner />
-                  )}
-                </div>
-              )}
-            </div>
+            {/* 통합 데이터 로그 카드 */}
+            {/* eqpId가 선택되었고 로딩이 끝나야 테이블을 보여줍니다. */}
+            {eqpId && !isLoading && (
+              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden flex-grow min-h-[400px]">
+                {" "}
+                {/* 최소 높이 및 flex-grow */}
+                <CombinedDataTable data={filteredData} />
+              </div>
+            )}
+            {/* EQP 선택 안됐거나 로딩중일 때 오른쪽 패널에 플레이스홀더 역할 */}
+            {(!eqpId || isLoading) && (
+              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl flex-grow min-h-[400px] flex items-center justify-center">
+                {!eqpId && !isLoading && (
+                  <p className="text-slate-600 dark:text-slate-400">
+                    EQP 선택 시 데이터 표시
+                  </p>
+                )}
+                {isLoading && <LoadingSpinner />}
+              </div>
+            )}
           </div>
         </div>
       </div>

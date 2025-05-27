@@ -5,6 +5,7 @@ export const groupConfig = {
     stateColors: {
       RUN: "bg-blue-500 border-blue-500",
       IDLE: "bg-yellow-500",
+      PM: "bg-green-500",
     },
     columns: {
       time: "timestamp",
