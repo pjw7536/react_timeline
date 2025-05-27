@@ -11,11 +11,17 @@ const RangeTimeline = ({ groupKey, data, range }) => {
     if (timeline) {
       const handlePointClick = (properties) => {
         if (properties.item) {
-          const clickedItemData = data.find(
-            (d) => `${groupKey}-${data.indexOf(d)}` === properties.item
-          );
+          const itemId = properties.item; // e.g., "EQP_STATUS-5"
+          const parts = itemId.split('-');
+          const itemIndex = parseInt(parts[parts.length - 1], 10);
+          const clickedItemData = data[itemIndex];
+
           // Point 아이템 클릭 시 특별한 알림 표시 또는 상세 정보 팝업
-          alert(`포인트 이벤트: ${clickedItemData?.comment}`);
+          if (clickedItemData) {
+            alert(`포인트 이벤트: ${clickedItemData.comment}`);
+          } else {
+            console.warn(`No data found for item ID: ${properties.item}`);
+          }
         }
       };
 
