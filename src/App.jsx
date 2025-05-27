@@ -12,21 +12,15 @@ const HomePage = () => (
 
 function App() {
   return (
-    <>
-      {" "}
-      {/* BrowserRouter는 main.jsx에서 이미 적용되었습니다. */}
-      <Navbar /> {/* Navbar를 모든 페이지 상단에 렌더링합니다. */}
-      <div className="mx-auto w-full">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Navbar />
+      <div className="flex-1 overflow-hidden">
         <Routes>
-          {" "}
-          {/* Routes로 Route들을 감싸줍니다. */}
-          <Route path="/" element={<HomePage />} /> {/* 기본 경로 설정 */}
-          <Route path="/timeline" element={<TimelinePage />} />{" "}
-          {/* /timeline 경로에 TimelinePage를 연결합니다. */}
-          {/* 다른 라우트들을 이곳에 추가할 수 있습니다. */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
         </Routes>
       </div>
-    </>
+    </div>
   );
 }
 

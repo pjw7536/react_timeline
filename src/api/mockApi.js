@@ -1,25 +1,33 @@
 /* 더미 API – setTimeout 으로 네트워크 지연 모사  */
-import {
-  lines,
-  equipments,
-  runStatusDB,
-  stepStatusDB,
-  eventLogDB,
-} from "../data/mockData";
 
-const fake = (data, ms = 300) =>
-  new Promise((res) => setTimeout(() => res({ data }), ms));
+const API_BASE_URL = "https://your-api-endpoint.com"; // 실제 API 엔드포인트로 변경
 
-export const fetchLines = () => fake(lines);
+export const fetchLines = async () => {
+  const response = await fetch(`${API_BASE_URL}/lines`);
+  if (!response.ok) throw new Error("Failed to fetch lines");
+  return response.json();
+};
 
-export const fetchEquipments = (lineId) =>
-  fake(equipments.filter((e) => e.lineId === lineId));
+export const fetchEquipments = async (lineId) => {
+  const response = await fetch(`${API_BASE_URL}/equipments?lineId=${lineId}`);
+  if (!response.ok) throw new Error("Failed to fetch equipments");
+  return response.json();
+};
 
-export const fetchRunStatus = (eqpId) =>
-  fake(runStatusDB.filter((r) => r.eqpId === eqpId));
+export const fetchRunStatus = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/run-status?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch run status");
+  return response.json();
+};
 
-export const fetchStepStatus = (eqpId) =>
-  fake(stepStatusDB.filter((s) => s.eqpId === eqpId));
+export const fetchStepStatus = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/step-status?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch step status");
+  return response.json();
+};
 
-export const fetchEventLog = (eqpId) =>
-  fake(eventLogDB.filter((ev) => ev.eqpId === eqpId));
+export const fetchEventLog = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/event-log?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch event log");
+  return response.json();
+};
