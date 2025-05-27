@@ -5,7 +5,7 @@ import "../../styles/timeline.css";
 
 const PointTimeline = ({ groupKey, data, range }) => {
   const containerRef = useRef(null);
-  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range); // useTimeline이 타임라인 인스턴스 ref를 반환한다고 가정
+  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
 
   // PointTimeline에만 적용되는 특별한 이벤트 핸들러
   useEffect(() => {
@@ -34,7 +34,10 @@ const PointTimeline = ({ groupKey, data, range }) => {
   return (
     <div className="timeline-container point-timeline">
       {/* PointTimeline 위에만 보이는 추가 UI 요소 */}
-      <button className="text-xs bg-blue-100 p-1 mb-1">포인트 전용 필터</button>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-bold">{groupKey}</h2> {/* 타임라인 이름 */}
+        <div className="flex space-x-4"> {/* 범례 */}</div>
+      </div>
       <div ref={containerRef} className="timeline" />
     </div>
   );

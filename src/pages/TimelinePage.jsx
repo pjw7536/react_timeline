@@ -1,5 +1,5 @@
 // src/pages/TimelinePage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import LineSelector from "../components/selectors/LineSelector";
 import EqpSelector from "../components/selectors/EqpSelector";
 import TimelineBoard from "../components/timeline/TimelineBoard";
@@ -8,14 +8,13 @@ import CombinedDataTable from "../components/tables/CombinedDataTable";
 import { useRunStatus } from "../hooks/useRunStatus";
 import { useStepStatus } from "../hooks/useStepStatus";
 import { useEventLog } from "../hooks/useEventLog";
-import { calcRange } from "../utils/timelineUtils";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 
 // 데이터 타입 상수 정의
 const DATA_TYPES = {
-  RUN: "RUN", // 설비 실행 상태
-  STEP: "STEP", // 공정 단계
-  EVENT: "EVENT", // 이벤트 로그
+  RUN: "EQP_STATUS", // 설비 실행 상태
+  STEP: "TIP_STATUS", // 공정 단계
+  EVENT: "EQP_INTERLOCK", // 이벤트 로그
 };
 
 const TimelinePage = () => {
@@ -91,43 +90,20 @@ const TimelinePage = () => {
     setTypeFilters((prevFilters) => ({ ...prevFilters, [name]: checked }));
   };
 
-  // 타임라인 시간 범위 계산
-  const range = useMemo(() => {
-    // 로딩 중이거나 설비가 선택되지 않은 경우 기본 범위 반환
-    if (isLoading || !eqpId) {
-      const now = new Date();
-      return { min: now, max: new Date(now.getTime() + 1000 * 60 * 60) };
-    }
-
-    // 데이터가 없는 경우 기본 범위 반환
-    if (
-      runData.length === 0 &&
-      stepData.length === 0 &&
-      eventData.length === 0 &&
-      !isLoading
-    ) {
-      const now = new Date();
-      return { min: now, max: new Date(now.getTime() + 1000 * 60 * 60) };
-    }
-
-    // 실제 데이터 기반 범위 계산
-    return calcRange(runData, stepData, eventData);
-  }, [runData, stepData, eventData, isLoading, eqpId]);
-
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6 overflow-hidden">
       <div className="h-full max-w-full mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
           {/* 왼쪽 컬럼: 설비 선택 및 타임라인 보드 */}
-          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 min-h-0">
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-2 min-h-0">
             {/* 상단 제목 및 설비 선택 영역 */}
             <div className="p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl border border-slate-200 dark:border-slate-700 flex-shrink-0">
               {/* 타이틀 영역 */}
-              <div className="flex items-center mb-6">
+              <div className="flex items-center mb-3">
                 <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-xl mr-4">
-                  <ChartBarIcon className="size-8 text-indigo-600 dark:text-indigo-400" />
+                  <ChartBarIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
                   EQP 타임라인 뷰어
                 </h1>
               </div>
@@ -199,7 +175,9 @@ const TimelinePage = () => {
               <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden flex-grow min-h-[400px]">
                 {" "}
                 {/* 최소 높이 및 flex-grow */}
-                <CombinedDataTable data={filteredData} />
+                <div className="overflow-auto max-h-96">
+                  <CombinedDataTable data={filteredData} />
+                </div>
               </div>
             )}
             {/* EQP 선택 안됐거나 로딩중일 때 오른쪽 패널에 플레이스홀더 역할 */}

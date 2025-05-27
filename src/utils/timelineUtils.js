@@ -20,7 +20,7 @@ export const processData = (groupKey, data) => {
     return {
       id: `${groupKey}-${idx}`,
       group: groupId, // PPID 그룹핑(STEP용)
-      content: row[columns.comment],
+      content: cfg.type === "range" ? undefined : row[columns.comment],
       start,
       end: cfg.type === "range" ? end : undefined,
       type: cfg.type,
@@ -31,7 +31,7 @@ export const processData = (groupKey, data) => {
 
 /* ±10일 여유 범위 */
 export const addBuffer = (min, max) => {
-  const B = 10 * 24 * 60 * 60 * 1000;
+  const B = 30 * 24 * 60 * 60 * 1000;
   return { min: new Date(min - B), max: new Date(max + B) };
 };
 

@@ -1,11 +1,12 @@
 export const groupConfig = {
-  RUN: {
+  EQP_STATUS: {
     type: "range",
     options: { stack: false, zoomMin: 1000 * 60 * 30 },
     stateColors: {
-      RUN: "bg-blue-500 border-blue-500",
-      IDLE: "bg-yellow-500",
-      PM: "bg-green-500",
+      RUN: "bg-blue-600 border-blue-700",
+      IDLE: "bg-yellow-600 border-yellow-700",
+      PM: "bg-green-600 border-green-700",
+      DOWN: "bg-red-600 border-red-700",
     },
     columns: {
       time: "timestamp",
@@ -13,7 +14,7 @@ export const groupConfig = {
       comment: "status",
     },
   },
-  STEP: {
+  TIP_STATUS: {
     type: "range",
     options: {
       stack: false,
@@ -22,8 +23,8 @@ export const groupConfig = {
       height: "100px",
     },
     stateColors: {
-      OPEN: "bg-blue-500 border-blue-600",
-      CLOSE: "bg-red-500 border-red-600",
+      OPEN: "bg-blue-600 border-blue-700",
+      CLOSE: "bg-red-600 border-red-700",
     },
     columns: {
       time: "start_time",
@@ -31,12 +32,12 @@ export const groupConfig = {
       comment: "step",
     },
   },
-  EVENT: {
+  EQP_INTERLOCK: {
     type: "point",
     options: { showCurrentTime: false },
     stateColors: {
-      ALARM: "bg-red-500 border-red-600",
-      WARN: "bg-amber-500 border-amber-600",
+      ALARM: "bg-red-600 border-red-700",
+      WARN: "bg-amber-600 border-amber-700",
     },
     columns: {
       time: "occurred_at",

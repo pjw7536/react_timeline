@@ -1,39 +1,33 @@
-
 @import "tailwindcss";
 
- /* src/index.css */
 /* vis-timeline 전용 커스텀 */
 .timeline-container {
   margin-bottom: 16px;
 }
 
+.vis-item {
+  @apply border border-transparent; /* 기본 테두리 설정 (색상은 각 클래스에서 덮어씀), 테두리 두께 1px */
+  color: #334155; /* Tailwind의 slate-800에 해당 */
+  border-radius: 0 !important; /* 👈 !important 추가하여 우선순위 높임 */
+  margin-right: -1px; /* 중요: 이웃한 아이템의 왼쪽 테두리와 겹치게 하여 틈새를 없앰 */
+  box-shadow: none !important; /* 기본 그림자 제거 */
+}
 
-/* tailwind 색상과 매칭 */
+/* tailwind 색상과 매칭 - 사용자가 제공한 규칙 우선 적용 */
 .vis-item.bg-red-500    { @apply bg-red-500 border-red-600; }
 .vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
 .vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
 .vis-item.bg-yellow-500 { @apply bg-yellow-500 border-yellow-600; }
+.vis-item.bg-gray-300   { @apply bg-gray-300 border-gray-400; } /* 기본 회색 아이템용 */
 
-.vis-item {
-  color: #334155; /* Tailwind의 slate-800에 해당 */
-}
+/* 추가된 색상 (예시, timelineMeta.js의 stateColors와 일치시켜야 함) */
+.vis-item.bg-red-600    { @apply bg-red-600 border-red-700; }
+.vis-item.bg-blue-600   { @apply bg-blue-600 border-blue-700; }
+.vis-item.bg-yellow-600 { @apply bg-yellow-600 border-yellow-700; }
+.vis-item.bg-green-600  { @apply bg-green-600 border-green-700; }
+.vis-item.bg-amber-600  { @apply bg-amber-600 border-amber-700; } /* WARN 이벤트용 등 */
 
-.vis-item.bg-red-500 {
-  @apply bg-red-500 border-red-600;
-}
-
-.vis-item.bg-green-500 {
-  @apply bg-green-500 border-green-600;
-}
-
-.vis-item.bg-blue-500 {
-  @apply bg-blue-500 border-blue-600;
-}
-
-.vis-item.bg-yellow-500 {
-  @apply bg-yellow-500 border-yellow-600;
-}
-
+/* 다크모드 .vis-item 텍스트 색상 */
 .dark .vis-item {
   color: #f1f5f9; /* Tailwind의 slate-100에 해당 */
 }
@@ -44,7 +38,7 @@
   color: #f1f5f9 !important; /* Tailwind slate-100 */
 }
 
-/* 라이트모드(기본)도 명시적으로 지정 가능 */
+/* 라이트모드(기본) x축(시간축) 텍스트 색상 */
 .vis-time-axis .vis-text,
 .vis-time-axis .vis-label {
   color: #334155; /* Tailwind slate-800 */
@@ -53,4 +47,7 @@
 /* 선택 시 테두리 */
 .vis-item.selected {
   @apply border-2 border-amber-500;
+  z-index: 10; /* 다른 아이템 위로 올라오도록 하여 테두리가 잘 보이게 함 */
+  /* border-radius는 .vis-item의 것을 따르므로, !important가 없다면 여기서도 0이 되어야 합니다. */
+  /* 만약 선택 시 둥근 모서리를 원한다면 여기서 border-radius를 다시 지정해야 합니다. */
 }

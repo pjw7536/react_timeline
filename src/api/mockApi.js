@@ -1,6 +1,6 @@
 /* 더미 API – setTimeout 으로 네트워크 지연 모사  */
 
-const API_BASE_URL = "https://your-api-endpoint.com"; // 실제 API 엔드포인트로 변경
+const API_BASE_URL = "http://127.0.0.1:8000"; // 실제 API 엔드포인트로 변경
 
 export const fetchLines = async () => {
   const response = await fetch(`${API_BASE_URL}/lines`);

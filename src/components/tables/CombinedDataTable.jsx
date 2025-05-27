@@ -24,36 +24,41 @@ const CombinedDataTable = ({ data }) => {
       <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
         통합 데이터 로그
       </h3>
-      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.accessor}
-                scope="col"
-                className="px-6 py-3 whitespace-nowrap"
-              >
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item, index) => (
-            <tr
-              key={index}
-              className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
-            >
+      <div className="overflow-y-auto max-h-96">
+        <table className="w-full text-sm text-center text-gray-800 dark:text-gray-200">
+          <thead className="sticky top-0 bg-gray-50 text-gray-900 dark:bg-gray-600 dark:text-gray-100">
+            <tr>
               {columns.map((col) => (
-                <td key={col.accessor} className="px-6 py-4 whitespace-nowrap">
-                  {item[col.accessor] || "-"}{" "}
-                  {/* 데이터가 없는 경우 '-' 표시 */}
-                </td>
+                <th
+                  key={col.accessor}
+                  scope="col"
+                  className="px-6 py-3 whitespace-nowrap font-semibold"
+                >
+                  {col.header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((item, index) => (
+              <tr
+                key={index}
+                className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.accessor}
+                    className="px-6 py-4 whitespace-nowrap"
+                  >
+                    {item[col.accessor] || "-"}{" "}
+                    {/* 데이터가 없는 경우 '-' 표시 */}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

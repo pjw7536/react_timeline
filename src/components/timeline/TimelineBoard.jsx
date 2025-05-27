@@ -44,11 +44,11 @@ const TimelineBoard = ({ eqpId }) => {
       {" "}
       {/* Tailwind CSS 클래스로 위쪽 마진을 줍니다. */}
       {/* RUN 상태를 표시하는 RangeTimeline */}
-      <RangeTimeline groupKey="RUN" data={run} range={range} />
+      <RangeTimeline groupKey="EQP_STATUS" data={run} range={range} />
       {/* STEP 상태를 표시하는 RangeTimeline */}
-      <RangeTimeline groupKey="STEP" data={step} range={range} />
+      <RangeTimeline groupKey="TIP_STATUS" data={step} range={range} />
       {/* EVENT 발생을 표시하는 PointTimeline */}
-      <PointTimeline groupKey="EVENT" data={ev} range={range} />
+      <PointTimeline groupKey="EQP_INTERLOCK" data={ev} range={range} />
     </div>
   );
 };

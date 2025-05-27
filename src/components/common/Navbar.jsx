@@ -110,7 +110,7 @@ export default function Navbar() {
             <span className="sr-only">Your Company</span>
             <img
               alt="Company Logo"
-              src="https://tailwindcss.com/img/logos/mark.svg?color=indigo&shade=600" // 로고 이미지
+              src="https://tailwindcss.com/plus-assets/img/logos/158x48/transistor-logo-gray-900.svg" // 로고 이미지
               className="h-8 w-auto"
             />
           </Link>

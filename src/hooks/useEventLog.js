@@ -6,4 +6,5 @@ export const useEventLog = (eqpId) =>
     queryKey: ["event", eqpId],
     queryFn: () => api.fetchEventLog(eqpId).then((r) => r.data),
     enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
   });

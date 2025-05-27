@@ -6,4 +6,5 @@ export const useStepStatus = (eqpId) =>
     queryKey: ["step", eqpId],
     queryFn: () => api.fetchStepStatus(eqpId).then((r) => r.data),
     enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
   });

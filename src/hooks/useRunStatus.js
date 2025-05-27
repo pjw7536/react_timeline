@@ -6,4 +6,5 @@ export const useRunStatus = (eqpId) =>
     queryKey: ["run", eqpId],
     queryFn: () => api.fetchRunStatus(eqpId).then((r) => r.data),
     enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
   });
