@@ -1,13 +1,18 @@
 import React from "react";
-import { useEquipments } from "../../hooks/useLineQueries"; // 경로 확인
-import LoadingSpinner from "../common/LoadingSpinner"; // 경로 확인
+import { useEquipments } from "../../hooks/useLineQueries";
+import LoadingSpinner from "../common/LoadingSpinner";
 
-/* 선택 라인의 EQP 드롭다운 */
+/**
+ * 선택된 라인(lineId)에 연결된 설비(EQP) 목록을 드롭다운으로 보여주는 컴포넌트입니다.
+ * - lineId가 없으면 드롭다운이 비활성화됩니다.
+ * - 장비 선택 시 setEqpId를 통해 상위 컴포넌트로 선택값이 전달됩니다.
+ */
 const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
+  // lineId가 있을 때만 해당 라인의 EQP 목록을 가져옵니다.
+  // data: EQP 배열, isLoading: 로딩중 여부
   const { data: eqps = [], isLoading } = useEquipments(lineId, !!lineId);
 
-  // lineId가 선택되지 않았을 때 표시하지 않음 (TimelinePage.jsx에서 이미 처리 중일 수 있음)
-  // 여기서는 로딩 상태만 처리하고, lineId가 없을 때 메시지를 띄우는 로직은 TimelinePage에 위임합니다.
+  // 라인이 선택되지 않은 경우: 비활성화된 드롭다운만 표시
   if (!lineId)
     return (
       <select
@@ -16,8 +21,8 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
           "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
           "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
           "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
-          "text-sm text-slate-500 dark:text-slate-400 " + // 비활성화 시 텍스트 색상
-          "bg-slate-100 dark:bg-slate-800 cursor-not-allowed " + // 비활성화 시 배경 및 커서
+          "text-sm text-slate-500 dark:text-slate-400 " +
+          "bg-slate-100 dark:bg-slate-800 cursor-not-allowed " +
           "transition duration-150 ease-in-out"
         }
       >
@@ -25,14 +30,16 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
       </select>
     );
 
+  // 로딩 중일 때: 스피너 표시
   if (isLoading) return <LoadingSpinner />;
 
+  // 정상 데이터 표시
   return (
     <div className="relative">
       <select
         value={eqpId ?? ""}
         onChange={(e) => setEqpId(Number(e.target.value))}
-        disabled={!lineId || eqps.length === 0} // 라인이 선택되지 않았거나 EQP 목록이 없으면 비활성화
+        disabled={!lineId || eqps.length === 0}
         className={
           "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
           "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
@@ -44,12 +51,14 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
             !lineId || eqps.length === 0
               ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
               : ""
-          }` // 비활성화 스타일
+          }`
         }
       >
+        {/* 기본 옵션 */}
         <option value="" className="text-slate-500 dark:text-slate-400">
           EQP 선택…
         </option>
+        {/* 해당 라인에 EQP가 없을 때 안내 메시지 */}
         {eqps.length === 0 && lineId && (
           <option
             value=""
@@ -59,6 +68,7 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
             해당 라인에 EQP가 없습니다.
           </option>
         )}
+        {/* EQP 목록을 옵션으로 렌더링 */}
         {eqps.map((e) => (
           <option
             key={e.id}
@@ -69,7 +79,7 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
           </option>
         ))}
       </select>
-      {/* 커스텀 드롭다운 화살표 (선택사항, 위 LineSelector와 동일한 SVG 사용 가능) */}
+      {/* (추후 커스텀 드롭다운 화살표 아이콘을 추가할 수 있습니다.) */}
     </div>
   );
 };

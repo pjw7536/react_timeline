@@ -1,0 +1,1916 @@
+﻿
+----- C:\Users\pjw75\Desktop\react-prc\src\api\historyAPI.js -----
+
+// API 요청을 위한 함수들 정의. 실제 백엔드 API와 통신할 때 사용합니다.
+
+const API_BASE_URL = "http://127.0.0.1:8000"; // 서버 주소. 실제 운영시 변경 필요!
+
+// "라인 목록"을 가져오는 API
+export const fetchLines = async () => {
+  const response = await fetch(`${API_BASE_URL}/lines`);
+  if (!response.ok) throw new Error("Failed to fetch lines");
+  return response.json();
+};
+
+// 선택한 라인의 "설비(EQP) 목록"을 가져오는 API
+export const fetchEquipments = async (lineId) => {
+  const response = await fetch(`${API_BASE_URL}/equipments?lineId=${lineId}`);
+  if (!response.ok) throw new Error("Failed to fetch equipments");
+  return response.json();
+};
+
+// 특정 설비의 "가동 상태(RUN)" 데이터를 가져오는 API
+export const fetchEQPStatus = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/run-status?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch run status");
+  return response.json();
+};
+
+// 특정 설비의 "Tip 상태(TIP)" 데이터를 가져오는 API
+export const fetchTIPLog = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/step-status?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch step status");
+  return response.json();
+};
+
+// 특정 설비의 "RACB 로그(변경점)" 데이터를 가져오는 API
+export const fetchRACBLog = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/event-log?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch event log");
+  return response.json();
+};
+
+// 특정 설비의 "CTTTM 로그" 데이터를 가져오는 API
+export const fetchCTTTMLog = async (eqpId) => {
+  const response = await fetch(`${API_BASE_URL}/ctttm-log?eqpId=${eqpId}`);
+  if (!response.ok) throw new Error("Failed to fetch CTTTM log");
+  return response.json();
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\common\LoadingSpinner.jsx -----
+
+import React from "react";
+
+// 로딩 중일 때 보여주는 스피너 컴포넌트
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center">
+    <div className="animate-spin rounded-full h-5 w-5 border-4 border-blue-500 border-t-transparent" />
+  </div>
+);
+
+export default LoadingSpinner;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\common\Navbar.jsx -----
+
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogPanel,
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+  Popover,
+  PopoverButton,
+  PopoverGroup,
+  PopoverPanel,
+} from "@headlessui/react";
+import {
+  ArrowPathIcon,
+  Bars3Icon,
+  ChartPieIcon,
+  CursorArrowRaysIcon,
+  FingerPrintIcon,
+  SquaresPlusIcon,
+  XMarkIcon,
+  SunIcon,
+  MoonIcon,
+} from "@heroicons/react/24/outline";
+import {
+  ChevronDownIcon,
+  PhoneIcon,
+  PlayCircleIcon,
+} from "@heroicons/react/20/solid";
+
+// "Product" 드롭다운에 사용될 예시 데이터
+const products = [
+  {
+    name: "Analytics",
+    description: "트래픽 분석",
+    href: "#",
+    icon: ChartPieIcon,
+  },
+  {
+    name: "Engagement",
+    description: "고객 소통",
+    href: "#",
+    icon: CursorArrowRaysIcon,
+  },
+  {
+    name: "Security",
+    description: "데이터 보안",
+    href: "#",
+    icon: FingerPrintIcon,
+  },
+  {
+    name: "Integrations",
+    description: "외부 연동",
+    href: "#",
+    icon: SquaresPlusIcon,
+  },
+  {
+    name: "Automations",
+    description: "자동화",
+    href: "#",
+    icon: ArrowPathIcon,
+  },
+];
+const callsToAction = [
+  { name: "Watch demo", href: "#", icon: PlayCircleIcon },
+  { name: "Contact sales", href: "#", icon: PhoneIcon },
+];
+
+export default function Navbar() {
+  // 모바일 메뉴와 다크모드 상태를 관리
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // 컴포넌트가 처음 마운트될 때, localStorage나 OS 기본 테마를 기준으로 다크모드 설정을 결정
+  useEffect(() => {
+    const isDark =
+      localStorage.theme === "dark" ||
+      (!("theme" in localStorage) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  // 다크모드 토글 (버튼 클릭 시 실행)
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    if (newDarkMode) {
+      localStorage.theme = "dark";
+      document.documentElement.classList.add("dark");
+    } else {
+      localStorage.theme = "light";
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  return (
+    // 상단 고정 네비게이션 바
+    <header className="bg-gray-100 dark:bg-gray-800 shadow-md sticky top-0 z-50">
+      <nav
+        aria-label="Global"
+        className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
+      >
+        {/* 로고: 메인 페이지로 이동 */}
+        <div className="flex lg:flex-1">
+          <Link to="/" className="-m-1.5 p-1.5">
+            <span className="sr-only">Your Company</span>
+            <img
+              alt="Company Logo"
+              src="https://tailwindcss.com/plus-assets/img/logos/158x48/transistor-logo-gray-900.svg"
+              className="h-8 w-auto"
+            />
+          </Link>
+        </div>
+        {/* 모바일 메뉴 버튼 (작은 화면에서만 보임) */}
+        <div className="flex lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700 dark:text-gray-300"
+          >
+            <span className="sr-only">Open main menu</span>
+            <Bars3Icon aria-hidden="true" className="size-6" />
+          </button>
+        </div>
+        {/* 데스크탑 메뉴: Product, Timeline 등 네비게이션 */}
+        <PopoverGroup className="hidden lg:flex lg:gap-x-12">
+          <Popover className="relative">
+            <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-900 dark:text-gray-100 focus:outline-none">
+              Product
+              <ChevronDownIcon
+                aria-hidden="true"
+                className="size-5 flex-none text-gray-400 dark:text-gray-500"
+              />
+            </PopoverButton>
+            {/* Product 드롭다운 패널 */}
+            <PopoverPanel
+              transition
+              className="absolute top-full -left-8 z-20 mt-3 w-screen max-w-md overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-900/5 dark:ring-white/10 transition"
+            >
+              <div className="p-4">
+                {products.map((item) => (
+                  <div
+                    key={item.name}
+                    className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-700 group-hover:bg-white dark:group-hover:bg-gray-600">
+                      <item.icon
+                        aria-hidden="true"
+                        className="size-6 text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                      />
+                    </div>
+                    <div className="flex-auto">
+                      <a
+                        href={item.href}
+                        className="block font-semibold text-gray-900 dark:text-gray-100"
+                      >
+                        {item.name}
+                        <span className="absolute inset-0" />
+                      </a>
+                      <p className="mt-1 text-gray-600 dark:text-gray-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* 하단 액션 버튼 */}
+              <div className="grid grid-cols-2 divide-x divide-gray-900/5 dark:divide-white/10 bg-gray-50 dark:bg-gray-700/50">
+                {callsToAction.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center justify-center gap-x-2.5 p-3 text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <item.icon
+                      aria-hidden="true"
+                      className="size-5 flex-none text-gray-400 dark:text-gray-500"
+                    />
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            </PopoverPanel>
+          </Popover>
+          {/* 타임라인 페이지로 이동하는 메뉴 */}
+          <Link
+            to="/timeline"
+            className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            Timeline
+          </Link>
+          <a
+            href="#"
+            className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            Marketplace
+          </a>
+          <a
+            href="#"
+            className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            Company
+          </a>
+        </PopoverGroup>
+        {/* 데스크탑: 다크모드 토글 + 로그인 */}
+        <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:gap-x-6">
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? (
+              <SunIcon className="size-6" />
+            ) : (
+              <MoonIcon className="size-6" />
+            )}
+          </button>
+          <a
+            href="#"
+            className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            Log in <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </nav>
+      {/* 모바일 메뉴 다이얼로그: 작은 화면에서만 열림 */}
+      <Dialog
+        open={mobileMenuOpen}
+        onClose={setMobileMenuOpen}
+        className="lg:hidden"
+      >
+        <div className="fixed inset-0 z-20" />
+        <DialogPanel className="fixed inset-y-0 right-0 z-30 w-full overflow-y-auto bg-white dark:bg-gray-800 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:sm:ring-white/10">
+          <div className="flex items-center justify-between">
+            <Link
+              to="/"
+              className="-m-1.5 p-1.5"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="sr-only">Your Company</span>
+              <img
+                alt="Company Logo"
+                src="https://tailwindcss.com/img/logos/mark.svg?color=indigo&shade=600"
+                className="h-8 w-auto"
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="-m-2.5 rounded-md p-2.5 text-gray-700 dark:text-gray-300"
+            >
+              <span className="sr-only">Close menu</span>
+              <XMarkIcon aria-hidden="true" className="size-6" />
+            </button>
+          </div>
+          <div className="mt-6 flow-root">
+            <div className="-my-6 divide-y divide-gray-500/10 dark:divide-gray-700">
+              <div className="space-y-2 py-6">
+                {/* Product 드롭다운 (모바일) */}
+                <Disclosure as="div" className="-mx-3">
+                  <DisclosureButton className="group flex w-full items-center justify-between rounded-lg py-2 pr-3.5 pl-3 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Product
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="size-5 flex-none text-gray-400 dark:text-gray-500 group-data-open:rotate-180"
+                    />
+                  </DisclosureButton>
+                  <DisclosurePanel className="mt-2 space-y-2">
+                    {[...products, ...callsToAction].map((item) => (
+                      <DisclosureButton
+                        key={item.name}
+                        as="a"
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block rounded-lg py-2 pr-3 pl-6 text-sm/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        {item.name}
+                      </DisclosureButton>
+                    ))}
+                  </DisclosurePanel>
+                </Disclosure>
+                {/* 주요 메뉴들 */}
+                <Link
+                  to="/timeline"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Timeline
+                </Link>
+                <a
+                  href="#"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Marketplace
+                </a>
+                <a
+                  href="#"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Company
+                </a>
+              </div>
+              <div className="py-6">
+                {/* 다크모드 토글 (모바일) */}
+                <button
+                  onClick={() => {
+                    toggleDarkMode();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="-mx-3 flex items-center gap-x-2 w-full rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  aria-label="Toggle dark mode"
+                >
+                  {darkMode ? (
+                    <SunIcon className="size-5 flex-none text-gray-400 dark:text-gray-500" />
+                  ) : (
+                    <MoonIcon className="size-5 flex-none text-gray-400 dark:text-gray-500" />
+                  )}
+                  {darkMode ? "라이트 모드" : "다크 모드"}
+                </button>
+                <a
+                  href="#"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Log in
+                </a>
+              </div>
+            </div>
+          </div>
+        </DialogPanel>
+      </Dialog>
+    </header>
+  );
+}
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\selectors\EqpSelector.jsx -----
+
+import React from "react";
+import { useEquipments } from "../../hooks/useLineQueries";
+import LoadingSpinner from "../common/LoadingSpinner";
+
+/**
+ * 선택된 라인(lineId)에 연결된 설비(EQP) 목록을 드롭다운으로 보여주는 컴포넌트입니다.
+ * - lineId가 없으면 드롭다운이 비활성화됩니다.
+ * - 장비 선택 시 setEqpId를 통해 상위 컴포넌트로 선택값이 전달됩니다.
+ */
+const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
+  // lineId가 있을 때만 해당 라인의 EQP 목록을 가져옵니다.
+  // data: EQP 배열, isLoading: 로딩중 여부
+  const { data: eqps = [], isLoading } = useEquipments(lineId, !!lineId);
+
+  // 라인이 선택되지 않은 경우: 비활성화된 드롭다운만 표시
+  if (!lineId)
+    return (
+      <select
+        disabled
+        className={
+          "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
+          "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
+          "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
+          "text-sm text-slate-500 dark:text-slate-400 " +
+          "bg-slate-100 dark:bg-slate-800 cursor-not-allowed " +
+          "transition duration-150 ease-in-out"
+        }
+      >
+        <option value="">EQP 선택…</option>
+      </select>
+    );
+
+  // 로딩 중일 때: 스피너 표시
+  if (isLoading) return <LoadingSpinner />;
+
+  // 정상 데이터 표시
+  return (
+    <div className="relative">
+      <select
+        value={eqpId ?? ""}
+        onChange={(e) => setEqpId(Number(e.target.value))}
+        disabled={!lineId || eqps.length === 0}
+        className={
+          "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
+          "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
+          "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
+          "text-sm text-slate-900 dark:text-slate-100 " +
+          "bg-white dark:bg-slate-700 " +
+          "transition duration-150 ease-in-out " +
+          `${
+            !lineId || eqps.length === 0
+              ? "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+              : ""
+          }`
+        }
+      >
+        {/* 기본 옵션 */}
+        <option value="" className="text-slate-500 dark:text-slate-400">
+          EQP 선택…
+        </option>
+        {/* 해당 라인에 EQP가 없을 때 안내 메시지 */}
+        {eqps.length === 0 && lineId && (
+          <option
+            value=""
+            disabled
+            className="text-slate-500 dark:text-slate-400"
+          >
+            해당 라인에 EQP가 없습니다.
+          </option>
+        )}
+        {/* EQP 목록을 옵션으로 렌더링 */}
+        {eqps.map((e) => (
+          <option
+            key={e.id}
+            value={e.id}
+            className="dark:bg-slate-700 dark:text-slate-100 text-slate-500 bg-white"
+          >
+            {e.name}
+          </option>
+        ))}
+      </select>
+      {/* (추후 커스텀 드롭다운 화살표 아이콘을 추가할 수 있습니다.) */}
+    </div>
+  );
+};
+
+export default EqpSelector;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\selectors\LineSelector.jsx -----
+
+import React from "react";
+import { useLines } from "../../hooks/useLineQueries";
+import LoadingSpinner from "../common/LoadingSpinner";
+
+/**
+ * 라인(line) 목록을 드롭다운으로 표시하고,
+ * 선택된 라인 ID를 setLineId로 상위에 전달합니다.
+ */
+const LineSelector = ({ lineId, setLineId }) => {
+  // 라인 목록 데이터와 로딩상태 가져오기
+  const { data: lines = [], isLoading } = useLines();
+
+  // 로딩 중엔 스피너 표시
+  if (isLoading) return <LoadingSpinner />;
+
+  // 드롭다운 표시
+  return (
+    <div className="relative">
+      <select
+        value={lineId ?? ""}
+        onChange={(e) => setLineId(Number(e.target.value))}
+        className={
+          "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
+          "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
+          "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
+          "text-sm text-slate-900 dark:text-slate-100 " +
+          "bg-white dark:bg-slate-700 " +
+          "transition duration-150 ease-in-out"
+        }
+      >
+        {/* 기본 안내 옵션 */}
+        <option value="" className="text-slate-500 dark:text-slate-400">
+          라인 선택…
+        </option>
+        {/* 라인 목록을 옵션으로 표시 */}
+        {lines.map((l) => (
+          <option
+            key={l.id}
+            value={l.id}
+            className="dark:bg-slate-700 dark:text-slate-100 text-slate-500 bg-white"
+          >
+            {l.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+export default LineSelector;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\tables\CombinedDataTable.jsx -----
+
+import React from "react";
+
+/**
+ * 여러 데이터 타입(RUN/STEP/EVENT 등)을 시간순으로 통합해서 보여주는 테이블입니다.
+ * - data: [{displayTimestamp, type, info1, info2, info3, ...}] 형태의 배열
+ */
+const CombinedDataTable = ({ data }) => {
+  // 데이터 없으면 안내 메시지
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        표시할 데이터가 없습니다. 필터를 확인해주세요.
+      </p>
+    );
+  }
+
+  // 테이블 컬럼 정의 (필요에 따라 수정 가능)
+  const columns = [
+    { header: "시간", accessor: "displayTimestamp" },
+    { header: "타입", accessor: "type" },
+    { header: "정보 1", accessor: "info1" },
+    { header: "정보 2", accessor: "info2" },
+    { header: "정보 3", accessor: "info3" },
+  ];
+
+  return (
+    <div className="overflow-x-auto shadow-md sm:rounded-lg">
+      <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
+        통합 데이터 로그
+      </h3>
+      <div className="overflow-y-auto max-h-96">
+        <table className="w-full text-sm text-center text-gray-800 dark:text-gray-200">
+          <thead className="sticky top-0 bg-gray-50 text-gray-900 dark:bg-gray-600 dark:text-gray-100">
+            <tr>
+              {columns.map((col) => (
+                <th
+                  key={col.accessor}
+                  scope="col"
+                  className="px-6 py-3 whitespace-nowrap font-semibold"
+                >
+                  {col.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item, index) => (
+              <tr
+                key={index}
+                className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.accessor}
+                    className="px-6 py-4 whitespace-nowrap"
+                  >
+                    {item[col.accessor] || "-"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default CombinedDataTable;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\tables\EQPStatusTable.jsx -----
+
+import React from "react";
+
+/**
+ * 설비의 "가동 상태(RUN)" 데이터만 보여주는 테이블.
+ * - data: [{ timestamp, status }]
+ */
+const EQPStatusTable = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        가동 상태 데이터가 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto shadow-md sm:rounded-lg">
+      <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
+        EQP 가동 상태
+      </h3>
+      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <tr>
+            <th scope="col" className="px-6 py-3">
+              시간
+            </th>
+            <th scope="col" className="px-6 py-3">
+              상태
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item, index) => (
+            <tr
+              key={index}
+              className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                {new Date(item.timestamp).toLocaleString()}
+              </td>
+              <td className="px-6 py-4">{item.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default EQPStatusTable;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\tables\RACBLogTable.jsx -----
+
+import React from "react";
+
+/**
+ * EVENT 로그 전용 테이블.
+ * - data: [{ occurred_at, event_type, comment }]
+ */
+const RACBLogTable = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        이벤트 로그 데이터가 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto shadow-md sm:rounded-lg">
+      <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
+        이벤트 로그
+      </h3>
+      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <tr>
+            <th scope="col" className="px-6 py-3">
+              발생 시간
+            </th>
+            <th scope="col" className="px-6 py-3">
+              이벤트 타입
+            </th>
+            <th scope="col" className="px-6 py-3">
+              코멘트
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item, index) => (
+            <tr
+              key={index}
+              className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                {new Date(item.occurred_at).toLocaleString()}
+              </td>
+              <td className="px-6 py-4">{item.event_type}</td>
+              <td className="px-6 py-4">{item.comment}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default RACBLogTable;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\tables\TIPLogTable.jsx -----
+
+import React from "react";
+
+/**
+ * 공정 단계(STEP)별 상태를 보여주는 테이블.
+ * - data: [{ start_time, step, ppid, state }]
+ */
+const TIPLogTable = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        공정 STEP 데이터가 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto shadow-md sm:rounded-lg">
+      <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
+        공정 STEP 상태
+      </h3>
+      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <tr>
+            <th scope="col" className="px-6 py-3">
+              시작 시간
+            </th>
+            <th scope="col" className="px-6 py-3">
+              STEP
+            </th>
+            <th scope="col" className="px-6 py-3">
+              PPID
+            </th>
+            <th scope="col" className="px-6 py-3">
+              상태
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item, index) => (
+            <tr
+              key={index}
+              className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                {new Date(item.start_time).toLocaleString()}
+              </td>
+              <td className="px-6 py-4">{item.step}</td>
+              <td className="px-6 py-4">{item.ppid}</td>
+              <td className="px-6 py-4">{item.state}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default TIPLogTable;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\hooks\useTimeline.js -----
+
+import { useRef } from "react";
+import { useTimelineRenderer } from "./useTimelineRenderer";
+
+/**
+ * 타임라인을 만들기 위한 커스텀 훅입니다.
+ * - containerRef: 타임라인이 표시될 DOM 참조(React의 useRef로 만든 div 등)
+ * - groupKey: 데이터 그룹 식별자 (예: "EQP_STATUS", "TIP_STATUS" 등)
+ * - data: 타임라인에 표시할 데이터
+ * - range: 타임라인의 시간 범위({min, max})
+ *
+ * 실제 타임라인 생성/업데이트 로직은 useTimelineRenderer 훅에 위임합니다.
+ */
+export const useTimeline = (containerRef, groupKey, data, range) => {
+  // useTimelineRenderer 내부에서 타임라인 인스턴스를 만들어서 관리합니다.
+  const tl = useTimelineRenderer(containerRef, groupKey, data, range);
+  return tl;
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\hooks\useTimelineRenderer.js -----
+
+import { useContext, useEffect, useRef, useMemo } from "react";
+import { Timeline, DataSet } from "vis-timeline/standalone";
+import { TimelineContext } from "../../../context/TimelineProvider";
+import { processData } from "../../../utils/timelineUtils";
+import { groupConfig } from "../../../utils/timelineMeta";
+
+/**
+ * 실제 vis-timeline 인스턴스를 생성/업데이트/해제하는 역할을 하는 커스텀 훅입니다.
+ * - 타임라인 인스턴스의 X축 동기화, 옵션 변화 반영 등을 관리합니다.
+ */
+export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
+  const tlRef = useRef(null); // 타임라인 인스턴스 참조
+  const { poolRef, register, unregister } = useContext(TimelineContext);
+
+  // 그룹별 옵션 (useMemo로 캐싱)
+  const groupOptions = useMemo(() => {
+    return groupConfig[groupKey]?.options ?? {};
+  }, [groupKey]);
+
+  // 1. 타임라인 인스턴스 생성 및 파괴
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // 타임라인 옵션 설정 (X축 min/max 포함)
+    const initialMergedOptions = {
+      stack: false,
+      zoomMin: 1000 * 60 * 30,
+      zoomMax: 1000 * 60 * 60 * 24 * 30,
+      ...groupOptions,
+      min: range.min,
+      max: range.max,
+    };
+
+    // 데이터 가공 및 타임라인 생성
+    const items = new DataSet(processData(groupKey, data, range.max));
+    tlRef.current = new Timeline(
+      containerRef.current,
+      items,
+      initialMergedOptions
+    );
+    tlRef.current.setWindow(range.min, range.max); // 최초 보이는 구간
+
+    // 타임라인 pool에 등록 (동기화 위해)
+    register(tlRef.current);
+
+    // X축 동기화: 다른 타임라인도 같이 움직이게 함
+    const currentTl = tlRef.current;
+    const handleRangeChange = ({ start, end }) => {
+      poolRef.current.forEach((tl) => {
+        if (tl !== currentTl) {
+          tl.setWindow(start, end, { animation: false });
+        }
+      });
+    };
+    currentTl.on("rangechange", handleRangeChange);
+
+    // 언마운트시: pool 해제 + 이벤트 해제 + 파괴
+    return () => {
+      unregister(currentTl);
+      currentTl.off("rangechange", handleRangeChange);
+      currentTl.destroy();
+      tlRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef, groupKey, poolRef, register, unregister]);
+
+  // 2. 데이터가 바뀔 때마다 타임라인 데이터만 갱신
+  useEffect(() => {
+    if (tlRef.current) {
+      tlRef.current.setItems(
+        new DataSet(processData(groupKey, data, range.max))
+      );
+    }
+  }, [data, groupKey, range.max]);
+
+  // 3. range(구간), 옵션 등이 바뀔 때마다 타임라인 옵션 및 윈도우 업데이트
+  useEffect(() => {
+    if (tlRef.current) {
+      const updatedMergedOptions = {
+        stack: false,
+        zoomMin: 1000 * 60 * 30,
+        zoomMax: 1000 * 60 * 60 * 24 * 30,
+        ...groupOptions,
+      };
+      tlRef.current.setOptions(updatedMergedOptions);
+      tlRef.current.setWindow(range.min, range.max);
+    }
+  }, [range, groupOptions]);
+
+  return tlRef;
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\PointTimeline.jsx -----
+
+import React, { useRef, useEffect } from "react";
+import { useTimeline } from "./hooks/useTimeline";
+import "../../styles/timeline.css";
+
+/**
+ * "포인트(점)" 타입 타임라인을 그리는 컴포넌트입니다.
+ * - groupKey: "EQP_INTERLOCK" 등
+ * - data: 표시할 이벤트 데이터 배열
+ * - range: 타임라인 시간 범위
+ *
+ * 타임라인은 useTimeline 훅을 통해 생성/관리됩니다.
+ */
+const PointTimeline = ({ groupKey, data, range }) => {
+  const containerRef = useRef(null);
+  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
+
+  useEffect(() => {
+    // (특별한 클릭 이벤트 등 넣을 때 여기에 구현)
+    const timeline = timelineInstanceRef.current;
+    if (timeline) {
+      // 예: timeline.on("select", ...) 등
+      timeline.on("select", (props) => {
+        console.log("POINT select", props);
+      });
+    }
+  }, [timelineInstanceRef, data, groupKey]);
+
+  return (
+    <div className="timeline-container point-timeline">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-bold">{groupKey}</h2>
+        {/* 필요시 범례 등 추가 */}
+        <div className="flex space-x-4"></div>
+      </div>
+      {/* 실제 타임라인이 그려질 영역 */}
+      <div ref={containerRef} className="timeline" />
+    </div>
+  );
+};
+
+export default PointTimeline;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\RangeTimeline.jsx -----
+
+import React, { useRef, useEffect } from "react";
+import { useTimeline } from "./hooks/useTimeline";
+import "../../styles/timeline.css";
+
+/**
+ * "범위(Range)" 타입 타임라인을 그리는 컴포넌트입니다.
+ * - groupKey: "EQP_STATUS" 또는 "TIP_STATUS" 등
+ * - data: 표시할 상태 데이터 배열
+ * - range: 타임라인 시간 범위
+ *
+ * 타임라인은 useTimeline 훅을 통해 생성/관리됩니다.
+ */
+const RangeTimeline = ({ groupKey, data, range }) => {
+  const containerRef = useRef(null);
+  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
+
+  useEffect(() => {
+    // (특별한 이벤트 넣을 때 여기에 구현)
+    const timeline = timelineInstanceRef.current;
+    if (timeline) {
+      // 예: timeline.on("select", ...) 등
+      timeline.on("select", (props) => {
+        console.log("RANGE select", props);
+      });
+    }
+  }, [timelineInstanceRef, data, groupKey]);
+
+  return (
+    <div className="timeline-container range-timeline">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-bold">{groupKey}</h2>
+        {/* 필요시 범례 등 추가 */}
+        <div className="flex space-x-4"></div>
+      </div>
+      {/* 실제 타임라인이 그려질 영역 */}
+      <div ref={containerRef} className="timeline" />
+    </div>
+  );
+};
+
+export default RangeTimeline;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\TimelineBoard.jsx -----
+
+import React from "react";
+import { useEqpStatus } from "../../hooks/useEqpStatus";
+import { useTipLog } from "../../hooks/useTIPLog";
+import { useRacbLog } from "../../hooks/useRacbLog";
+import { useCtttmLog } from "../../hooks/useCTTTMLog";
+import RangeTimeline from "./RangeTimeline";
+import PointTimeline from "./PointTimeline";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { calcRange, addBuffer } from "../../utils/timelineUtils";
+
+/**
+ * 하나의 EQP에 대해 RUN, STEP, EVENT 타임라인을 모두 표시하는 컴포넌트입니다.
+ * (X축 범위는 자동 동기화)
+ * - eqpId: 장비 ID
+ */
+const TimelineBoard = ({ eqpId }) => {
+  // 각 데이터 fetch (React Query 사용)
+  const { data: run = [], isLoading: l1 } = useEqpStatus(eqpId);
+  const { data: step = [], isLoading: l2 } = useTipLog(eqpId);
+  const { data: ev = [], isLoading: l3 } = useRacbLog(eqpId);
+  const { data: ctttm = [], isLoading: l4 } = useCtttmLog(eqpId);
+
+  // 선택된 장비 없으면 아무것도 렌더링 안 함
+  if (!eqpId) return null;
+  // 데이터 로딩 중일 때 스피너 표시
+  if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
+
+  // 데이터 전체 시간 범위 계산 (최소~최대)
+  const range = calcRange(run, step, ev, ctttm);
+
+  // 3일 여유 범위 더하기 (양쪽 ±3일)
+  const fullRange = addBuffer(range.min.getTime(), range.max.getTime());
+
+  // 세 개의 타임라인 출력 (범위 공유)
+  return (
+    <div className=" w-full">
+      <RangeTimeline groupKey="EQP_STATUS" data={run} range={fullRange} />
+      <RangeTimeline groupKey="TIP_STATUS" data={step} range={fullRange} />
+      <PointTimeline groupKey="CTTTM_LOG" data={ctttm} range={fullRange} />
+      <PointTimeline groupKey="RACB_LOG" data={ev} range={fullRange} />
+    </div>
+  );
+};
+
+export default TimelineBoard;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\context\SelectionContext.jsx -----
+
+import React, { createContext, useState, useContext } from "react";
+
+// "선택된 테이블 행" 상태를 전역에서 공유할 수 있게 해주는 Context입니다.
+const SelectionContext = createContext();
+
+// 이 훅을 사용하면 하위 컴포넌트에서 쉽게 선택 상태에 접근/설정할 수 있습니다.
+export const useSelection = () => useContext(SelectionContext);
+
+/**
+ * SelectionProvider로 감싸면, 하위 컴포넌트에서
+ * { selectedRow, setSelectedRow }를 사용할 수 있습니다.
+ */
+export const SelectionProvider = ({ children }) => {
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  return (
+    <SelectionContext.Provider value={{ selectedRow, setSelectedRow }}>
+      {children}
+    </SelectionContext.Provider>
+  );
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\context\TimelineProvider.jsx -----
+
+import React, { createContext, useRef } from "react";
+
+/**
+ * TimelineProvider: 여러 타임라인 인스턴스(vis-timeline 객체)를 공유 관리하는 컨텍스트입니다.
+ * - poolRef: 타임라인 인스턴스(객체)들의 배열을 참조 (동기화, 해제 등에서 사용)
+ * - register: 타임라인 생성 시 pool에 추가
+ * - unregister: 타임라인 파괴 시 pool에서 제거
+ */
+export const TimelineContext = createContext(null);
+
+export const TimelineProvider = ({ children }) => {
+  // 타임라인 인스턴스(객체)들의 배열 (리렌더에도 값 유지)
+  const poolRef = useRef([]);
+
+  // 타임라인 인스턴스 추가
+  const register = (tl) => (poolRef.current = [...poolRef.current, tl]);
+  // 타임라인 인스턴스 제거
+  const unregister = (tl) =>
+    (poolRef.current = poolRef.current.filter((t) => t !== tl));
+
+  return (
+    <TimelineContext.Provider value={{ poolRef, register, unregister }}>
+      {children}
+    </TimelineContext.Provider>
+  );
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\data\mockData.js -----
+
+// 라인, EQP, 타임라인 시각화용 더미(임시) 데이터
+
+export const lines = [
+  { id: 1, name: "LINE-A" },
+  { id: 2, name: "LINE-B" },
+  { id: 3, name: "LINE-C" },
+  { id: 4, name: "LINE-D" },
+];
+
+export const equipments = [
+  { id: 101, lineId: 1, name: "EQP-101" },
+  { id: 102, lineId: 1, name: "EQP-102" },
+  { id: 201, lineId: 2, name: "EQP-201" },
+  { id: 202, lineId: 2, name: "EQP-202" },
+  { id: 301, lineId: 3, name: "EQP-301" },
+  { id: 302, lineId: 3, name: "EQP-302" },
+  { id: 401, lineId: 4, name: "EQP-401" },
+];
+
+// ① 설비 가동 상태 (RUN/IDLE/PM)
+export const runStatusDB = [
+  { eqpId: 101, timestamp: "2025-06-01T08:00:00Z", status: "RUN" },
+  { eqpId: 101, timestamp: "2025-06-01T09:00:00Z", status: "IDLE" },
+  { eqpId: 101, timestamp: "2025-06-01T10:00:00Z", status: "PM" },
+  { eqpId: 101, timestamp: "2025-06-01T11:00:00Z", status: "RUN" },
+  { eqpId: 102, timestamp: "2025-06-01T08:30:00Z", status: "RUN" },
+  { eqpId: 102, timestamp: "2025-06-01T09:30:00Z", status: "IDLE" },
+  { eqpId: 201, timestamp: "2025-06-01T08:15:00Z", status: "RUN" },
+  { eqpId: 201, timestamp: "2025-06-01T09:45:00Z", status: "PM" },
+];
+
+// ② 공정 STEP/PPID별 OPEN·CLOSE 상태
+export const stepStatusDB = [
+  {
+    eqpId: 101,
+    start_time: "2025-06-01T08:00:00Z",
+    step: "STEP-1",
+    ppid: "PPID-A",
+    state: "OPEN",
+  },
+  {
+    eqpId: 101,
+    start_time: "2025-06-01T09:30:00Z",
+    step: "STEP-1",
+    ppid: "PPID-A",
+    state: "CLOSE",
+  },
+  {
+    eqpId: 101,
+    start_time: "2025-06-01T09:30:00Z",
+    step: "STEP-2",
+    ppid: "PPID-B",
+    state: "OPEN",
+  },
+  {
+    eqpId: 101,
+    start_time: "2025-06-01T11:00:00Z",
+    step: "STEP-2",
+    ppid: "PPID-B",
+    state: "CLOSE",
+  },
+  {
+    eqpId: 102,
+    start_time: "2025-06-01T08:15:00Z",
+    step: "STEP-3",
+    ppid: "PPID-C",
+    state: "OPEN",
+  },
+  {
+    eqpId: 102,
+    start_time: "2025-06-01T09:45:00Z",
+    step: "STEP-3",
+    ppid: "PPID-C",
+    state: "CLOSE",
+  },
+];
+
+// ③ 각종 이벤트/알람 이력 (POINT 데이터)
+export const eventLogDB = [
+  {
+    eqpId: 101,
+    occurred_at: "2025-06-01T08:45:00Z",
+    event_type: "ALARM",
+    comment: "Temp High",
+  },
+  {
+    eqpId: 101,
+    occurred_at: "2025-06-01T10:15:00Z",
+    event_type: "WARN",
+    comment: "Pressure Low",
+  },
+  {
+    eqpId: 102,
+    occurred_at: "2025-06-01T09:00:00Z",
+    event_type: "ALARM",
+    comment: "Voltage Drop",
+  },
+  {
+    eqpId: 201,
+    occurred_at: "2025-06-01T09:30:00Z",
+    event_type: "WARN",
+    comment: "Overheat",
+  },
+];
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useCTTTMLog.js -----
+
+import { useQuery } from "@tanstack/react-query";
+import * as api from "../api/historyAPI";
+
+/**
+ * 선택된 EQP의 CTTTM 로그 데이터를 불러오는 훅.
+ * - eqpId가 있을 때만 동작
+ * - 캐시 유지 시간: 30분
+ */
+export const useCtttmLog = (eqpId) =>
+  useQuery({
+    queryKey: ["ctttm", eqpId],
+    queryFn: () => api.fetchCTTTMLog(eqpId).then((r) => r.data),
+    enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
+  });
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useEQPStatus.js -----
+
+import { useQuery } from "@tanstack/react-query";
+import * as api from "../api/historyAPI";
+
+/**
+ * 선택된 EQP의 가동 상태(RUN) 데이터를 불러오는 훅.
+ * - eqpId가 있을 때만 동작
+ * - 캐시 유지 시간: 30분
+ */
+export const useEqpStatus = (eqpId) =>
+  useQuery({
+    queryKey: ["run", eqpId],
+    queryFn: () => api.fetchEQPStatus(eqpId).then((r) => r.data),
+    enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
+  });
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useLineQueries.js -----
+
+import { useQuery } from "@tanstack/react-query";
+import * as api from "../api/historyAPI";
+
+/**
+ * 전체 "라인 목록"을 불러오는 훅.
+ * - 캐시 유지 시간: 30분
+ */
+export const useLines = () =>
+  useQuery({
+    queryKey: ["lines"],
+    queryFn: () => api.fetchLines().then((r) => r.data),
+    staleTime: 1000 * 60 * 30,
+  });
+
+/**
+ * 선택된 라인의 "설비(EQP) 목록"을 불러오는 훅.
+ * - enabled: 라인ID가 있을 때만 동작
+ * - 캐시 유지 시간: 30분
+ */
+export const useEquipments = (lineId, enabled) =>
+  useQuery({
+    queryKey: ["equipments", lineId],
+    queryFn: () => api.fetchEquipments(lineId).then((r) => r.data),
+    enabled,
+    staleTime: 1000 * 60 * 30,
+  });
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useRACBLog.js -----
+
+import { useQuery } from "@tanstack/react-query";
+import * as api from "../api/historyAPI";
+
+/**
+ * 선택된 EQP의 EVENT 로그 데이터를 불러오는 커스텀 훅.
+ * - eqpId가 있을 때만 동작 (enabled: !!eqpId)
+ * - 캐시 유지 시간: 30분
+ */
+export const useRacbLog = (eqpId) =>
+  useQuery({
+    queryKey: ["event", eqpId],
+    queryFn: () => api.fetchRACBLog(eqpId).then((r) => r.data),
+    enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
+  });
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useTIPLog.js -----
+
+import { useQuery } from "@tanstack/react-query";
+import * as api from "../api/historyAPI";
+
+/**
+ * 선택된 EQP의 공정 단계(STEP) 데이터를 불러오는 훅.
+ * - eqpId가 있을 때만 동작
+ * - 캐시 유지 시간: 30분
+ */
+export const useTipLog = (eqpId) =>
+  useQuery({
+    queryKey: ["step", eqpId],
+    queryFn: () => api.fetchTIPLog(eqpId).then((r) => r.data),
+    enabled: !!eqpId,
+    staleTime: 1000 * 60 * 30,
+  });
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\pages\TimelinePage.jsx -----
+
+// src/pages/TimelinePage.jsx
+import React, { useState, useMemo } from "react";
+import LineSelector from "../components/selectors/LineSelector";
+import EqpSelector from "../components/selectors/EqpSelector";
+import TimelineBoard from "../components/timeline/TimelineBoard";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import CombinedDataTable from "../components/tables/CombinedDataTable";
+import { useEqpStatus } from "../hooks/useEqpStatus";
+import { useTipLog } from "../hooks/useTIPLog";
+import { useRacbLog } from "../hooks/useRacbLog";
+import { ChartBarIcon } from "@heroicons/react/24/outline";
+
+// 데이터 타입 상수 정의
+const DATA_TYPES = {
+  EQP: "EQP_STATUS", // 설비 상태
+  TIP: "TIP_STATUS", // 공정 단계
+  RACB: "RACB_LOG", // 이벤트 로그
+  CTTTM: "CTTTM_LOG", // 이벤트 로그
+};
+
+const TimelinePage = () => {
+  // 상태 관리
+  const [lineId, setLineId] = useState(null); // 선택된 라인 ID
+  const [eqpId, setEqpId] = useState(null); // 선택된 설비 ID
+  const [typeFilters, setTypeFilters] = useState({
+    // 데이터 타입별 필터 상태
+    [DATA_TYPES.EQP]: true,
+    [DATA_TYPES.TIP]: true,
+    [DATA_TYPES.RACB]: true,
+  });
+
+  // 각 데이터 타입별 API 호출 및 로딩 상태
+  const { data: runData = [], isLoading: l1 } = useEqpStatus(eqpId);
+  const { data: stepData = [], isLoading: l2 } = useTipLog(eqpId);
+  const { data: eventData = [], isLoading: l3 } = useRacbLog(eqpId);
+
+  const isLoading = l1 || l2 || l3; // 전체 로딩 상태
+
+  // 데이터 변환 및 통합 로직
+  const combinedAndSortedData = useMemo(() => {
+    if (isLoading || !eqpId) return [];
+
+    // RUN 데이터 변환
+    const transformedRun = runData.map((item) => ({
+      originalTimestamp: new Date(item.timestamp),
+      displayTimestamp: new Date(item.timestamp).toLocaleString(),
+      type: DATA_TYPES.EQP,
+      info1: item.status,
+      info2: "",
+      info3: "",
+    }));
+
+    // STEP 데이터 변환
+    const transformedStep = stepData.map((item) => ({
+      originalTimestamp: new Date(item.start_time),
+      displayTimestamp: new Date(item.start_time).toLocaleString(),
+      type: DATA_TYPES.TIP,
+      info1: item.step,
+      info2: item.ppid,
+      info3: item.state,
+    }));
+
+    // EVENT 데이터 변환
+    const transformedEvent = eventData.map((item) => ({
+      originalTimestamp: new Date(item.occurred_at),
+      displayTimestamp: new Date(item.occurred_at).toLocaleString(),
+      type: DATA_TYPES.RACB,
+      info1: item.event_type,
+      info2: item.comment,
+      info3: "",
+    }));
+
+    // 모든 데이터 통합 및 시간순 정렬
+    const allData = [
+      ...transformedRun,
+      ...transformedStep,
+      ...transformedEvent,
+    ];
+    allData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
+    return allData;
+  }, [runData, stepData, eventData, isLoading, eqpId]);
+
+  // 필터링된 데이터 계산
+  const filteredData = useMemo(() => {
+    return combinedAndSortedData.filter((item) => typeFilters[item.type]);
+  }, [combinedAndSortedData, typeFilters]);
+
+  // 필터 체크박스 변경 핸들러
+  const handleFilterChange = (event) => {
+    const { name, checked } = event.target;
+    setTypeFilters((prevFilters) => ({ ...prevFilters, [name]: checked }));
+  };
+
+  return (
+    <div className="h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 md:p-6 overflow-hidden">
+      <div className="h-full max-w-full mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
+          {/* 왼쪽 컬럼: 설비 선택 및 타임라인 보드 */}
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-2 min-h-0">
+            {/* 상단 제목 및 설비 선택 영역 */}
+            <div className="p-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl border border-slate-200 dark:border-slate-700 flex-shrink-0">
+              {/* 타이틀 영역 */}
+              <div className="flex items-center mb-3">
+                <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-xl mr-4">
+                  <ChartBarIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                  EQP 타임라인 뷰어
+                </h1>
+              </div>
+              {/* 라인/설비 선택기 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <LineSelector lineId={lineId} setLineId={setLineId} />
+                <EqpSelector
+                  lineId={lineId}
+                  eqpId={eqpId}
+                  setEqpId={setEqpId}
+                />
+              </div>
+            </div>
+
+            {/* 타임라인 보드 영역 - overflow-auto 적용 */}
+            <div className="flex-1 min-h-0 overflow-auto">
+              {eqpId && !isLoading ? (
+                <div className="h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl p-3 md:p-4 border border-slate-200 dark:border-slate-700">
+                  <TimelineBoard eqpId={eqpId} />
+                </div>
+              ) : !eqpId && !isLoading ? (
+                <div className="h-full text-center p-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                  <div className="max-w-md">
+                    <ChartBarIcon className="size-16 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+                    <p className="text-xl text-slate-600 dark:text-slate-400">
+                      라인과 EQP를 선택하여 타임라인을 조회하세요.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-xl rounded-2xl">
+                  <LoadingSpinner />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 오른쪽 컬럼: 필터 및 통합 데이터 로그 */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-3">
+            {/* 데이터 필터 카드 */}
+            <div className="p-6 bg-white dark:bg-slate-800 shadow-lg rounded-xl">
+              <h4 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">
+                데이터 필터
+              </h4>
+              <div className="space-y-2">
+                {Object.keys(DATA_TYPES).map((typeKey) => (
+                  <label
+                    key={typeKey}
+                    className="flex items-center space-x-3 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      name={DATA_TYPES[typeKey]}
+                      checked={typeFilters[DATA_TYPES[typeKey]]}
+                      onChange={handleFilterChange}
+                      className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-indigo-500 dark:focus:ring-offset-slate-800"
+                    />
+                    <span className="text-slate-700 dark:text-slate-300 select-none">
+                      {typeKey}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* 통합 데이터 로그 카드 */}
+            {/* eqpId가 선택되었고 로딩이 끝나야 테이블을 보여줍니다. */}
+            {eqpId && !isLoading && (
+              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl overflow-hidden flex-grow min-h-[400px]">
+                {" "}
+                {/* 최소 높이 및 flex-grow */}
+                <div className="overflow-auto max-h-96">
+                  <CombinedDataTable data={filteredData} />
+                </div>
+              </div>
+            )}
+            {/* EQP 선택 안됐거나 로딩중일 때 오른쪽 패널에 플레이스홀더 역할 */}
+            {(!eqpId || isLoading) && (
+              <div className="bg-white dark:bg-slate-800 shadow-lg rounded-xl flex-grow min-h-[400px] flex items-center justify-center">
+                {!eqpId && !isLoading && (
+                  <p className="text-slate-600 dark:text-slate-400">
+                    EQP 선택 시 데이터 표시
+                  </p>
+                )}
+                {isLoading && <LoadingSpinner />}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TimelinePage;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\styles\timeline.css -----
+
+@import "tailwindcss";
+
+/* vis-timeline용 커스텀 스타일링 */
+/* 전체 타임라인 영역 기본 마진 */
+.timeline-container {
+  margin-bottom: 16px;
+}
+
+/* 각 vis-item(타임라인 아이템)에 Tailwind 색상 스타일 적용 */
+.vis-item {
+  @apply border border-transparent;
+  color: #334155; /* slate-800 */
+  border-radius: 0 !important;
+  margin-right: -1px;
+  box-shadow: none !important;
+}
+
+/* 주요 상태별 색상 (Tailwind 색상 기준, groupConfig와 일치시켜야 함) */
+.vis-item.bg-red-500    { @apply bg-red-500 border-red-600; }
+.vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
+.vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
+.vis-item.bg-yellow-500 { @apply bg-yellow-500 border-yellow-600; }
+.vis-item.bg-gray-300   { @apply bg-gray-300 border-gray-400; }
+.vis-item.bg-red-600    { @apply bg-red-600 border-red-700; }
+.vis-item.bg-blue-600   { @apply bg-blue-600 border-blue-700; }
+.vis-item.bg-yellow-600 { @apply bg-yellow-600 border-yellow-700; }
+.vis-item.bg-green-600  { @apply bg-green-600 border-green-700; }
+.vis-item.bg-amber-600  { @apply bg-amber-600 border-amber-700; }
+
+/* 다크모드에서 아이템 텍스트 색상 */
+.dark .vis-item {
+  color: #f1f5f9; /* slate-100 */
+}
+
+/* 다크모드: 시간축(라벨/텍스트) 색상 */
+.dark .vis-time-axis .vis-text,
+.dark .vis-time-axis .vis-label {
+  color: #f1f5f9 !important;
+}
+
+/* 라이트모드(기본) 시간축 색상 */
+.vis-time-axis .vis-text,
+.vis-time-axis .vis-label {
+  color: #334155;
+}
+
+/* 선택된 아이템(클릭 시 강조) */
+.vis-item.selected {
+  @apply border-2 border-amber-500;
+  z-index: 10;
+}
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\utils\timelineMeta.js -----
+
+/**
+ * 타임라인 그룹별로 "옵션/색상/주요 컬럼"을 정의한 메타데이터 객체입니다.
+ * - groupConfig[KEY]
+ *    - type: "range" | "point"
+ *    - options: vis-timeline에 넘길 옵션(기본값)
+ *    - stateColors: 각 상태별 Tailwind 색상 클래스
+ *    - columns: 시간, 상태, 설명(코멘트) 컬럼명
+ */
+export const groupConfig = {
+  EQP_STATUS: {
+    type: "range",
+    options: {},
+    stateColors: {
+      RUN: "bg-blue-600 border-blue-700",
+      IDLE: "bg-yellow-600 border-yellow-700",
+      PM: "bg-green-600 border-green-700",
+      DOWN: "bg-red-600 border-red-700",
+    },
+    columns: {
+      time: "timestamp",
+      state: "status",
+      comment: "status",
+    },
+  },
+  TIP_STATUS: {
+    type: "range",
+    options: {},
+    stateColors: {
+      OPEN: "bg-blue-600 border-blue-700",
+      CLOSE: "bg-red-600 border-red-700",
+    },
+    columns: {
+      time: "start_time",
+      state: "state",
+      comment: "step",
+    },
+  },
+  RACB_LOG: {
+    type: "point",
+    options: {},
+    stateColors: {
+      ALARM: "bg-red-600 border-red-700",
+      WARN: "bg-amber-600 border-amber-700",
+    },
+    columns: {
+      time: "occurred_at",
+      state: "event_type",
+      comment: "comment",
+    },
+  },
+  CTTTM_LOG: {
+    type: "point",
+    options: {},
+    stateColors: {
+      TTM_FAIL: "bg-red-600 border-red-700",
+      TTM_WARN: "bg-yellow-600 border-yellow-700",
+    },
+    columns: {
+      time: "occurred_at",
+      state: "event_type",
+      comment: "comment",
+    },
+  },
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\utils\timelineUtils.js -----
+
+import { groupConfig } from "./timelineMeta";
+
+/**
+ * 원시 데이터를 vis-timeline이 이해할 수 있는 형태로 가공합니다.
+ * groupKey: 어떤 타입인지 (예: EQP_STATUS)
+ * data: 원본 데이터 배열
+ * overallMaxTime: 마지막 아이템 끝 범위 (없으면 range.max)
+ */
+export const processData = (groupKey, data) => {
+  const cfg = groupConfig[groupKey];
+  const { columns, stateColors } = cfg;
+
+  return data.map((row, idx) => {
+    const start = new Date(row[columns.time]);
+    const next = data[idx + 1];
+    // 마지막 아이템은 range.max까지 끝이 연장됩니다.
+    const end = next
+      ? new Date(next[columns.time])
+      : new Date(
+          start.getFullYear(),
+          start.getMonth(),
+          start.getDate(),
+          23,
+          59,
+          59
+        );
+    const state = row[columns.state];
+    const colorCls = stateColors[state] ?? "bg-gray-300";
+    const groupId =
+      columns.groupBy && row[columns.groupBy] ? row[columns.groupBy] : groupKey;
+
+    return {
+      id: `${groupKey}-${idx}`,
+      group: groupId,
+      content: cfg.type === "range" ? undefined : row[columns.comment],
+      start,
+      end: cfg.type === "range" ? end : undefined,
+      type: cfg.type,
+      className: colorCls,
+    };
+  });
+};
+
+/**
+ * ±3일 여유를 주는 범위 반환
+ */
+export const addBuffer = (min, max) => {
+  const B = 3 * 24 * 60 * 60 * 1000;
+  return { min: new Date(min - B), max: new Date(max + B) };
+};
+
+/**
+ * 기본 타임라인 옵션
+ */
+export const baseOptions = (min, max) => ({
+  stack: false,
+  zoomMin: 1000 * 60 * 30,
+  zoomMax: 1000 * 60 * 60 * 24 * 7,
+  min,
+  max,
+});
+
+/**
+ * 여러 데이터(run/step/ev)에서 전체 시간 범위(min~max)를 계산합니다.
+ */
+export const calcRange = (...arrs) => {
+  const ts = arrs
+    .flat()
+    .map((d) =>
+      new Date(d.timestamp || d.start_time || d.occurred_at).getTime()
+    );
+  if (ts.length === 0) return { min: new Date(), max: new Date() };
+  const min = new Date(Math.min(...ts));
+  const max = new Date(Math.max(...ts));
+  return { min, max };
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\App.css -----
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\App.jsx -----
+
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./components/common/Navbar";
+import TimelinePage from "./pages/TimelinePage";
+
+/**
+ * 앱의 메인 컴포넌트입니다.
+ * - 항상 상단에 Navbar(네비게이션 바)를 보여줍니다.
+ * - / (홈) 및 /timeline (타임라인 페이지) 라우팅을 지원합니다.
+ */
+const HomePage = () => (
+  <div className="p-6 text-center">
+    <h1 className="text-2xl font-bold">홈페이지에 오신 것을 환영합니다!</h1>
+    <p>네비게이션 바에서 타임라인 탭을 선택하여 EQP 타임라인을 확인하세요.</p>
+  </div>
+);
+
+function App() {
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* 항상 상단에 표시되는 네비게이션 바 */}
+      <Navbar />
+      {/* 아래쪽 영역(페이지 본문) */}
+      <div className="flex-1 overflow-hidden">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
+        </Routes>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\index.css -----
+
+@import "tailwindcss";
+
+/* Tailwind의 dark 모드 스타일 활성화 및 timeline.css 커스텀 스타일 불러오기 */
+@custom-variant dark (&:where(.dark, .dark *));
+@import "./styles/timeline.css";
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\main.jsx -----
+
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { StrictMode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TimelineProvider } from "./context/TimelineProvider";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+
+// React Query의 전역 클라이언트(캐시 등)
+const qc = new QueryClient();
+
+/**
+ * 프로젝트의 최상위 엔트리포인트입니다.
+ * - StrictMode: React 개발용 경고/검사를 강화합니다.
+ * - QueryClientProvider: React Query 전역 상태 제공
+ * - TimelineProvider: 타임라인 동기화 컨텍스트 제공
+ * - BrowserRouter: 라우팅 기능 제공
+ * - App: 실제 앱 화면 (Navbar 및 각 페이지)
+ */
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <QueryClientProvider client={qc}>
+      <TimelineProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </TimelineProvider>
+    </QueryClientProvider>
+  </StrictMode>
+);
+
+
+----- C:\Users\pjw75\Desktop\react-prc\eslint.config.js -----
+
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+
+----- C:\Users\pjw75\Desktop\react-prc\index.html -----
+
+<!doctype html>
+<html lang="en" class="bg-slate-50 dark:bg-slate-900">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/src/index.css" rel="stylesheet">
+    <title>Vite + React + Timeline</title>
+    <script>
+      // 페이지 로드 시 브라우저 테마 또는 localStorage에 따라 다크모드 설정
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+----- C:\Users\pjw75\Desktop\react-prc\tailwind.config.js -----
+
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+  // darkMode: class 기반으로(수동 전환 지원)
+  darkMode: "class",
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}", // src 내부의 모든 js/ts/jsx/tsx 파일 적용
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [require("@tailwindcss/forms")],
+};
+
+
+----- C:\Users\pjw75\Desktop\react-prc\vite.config.js -----
+
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+
+/**
+ * Vite 개발 서버 및 플러그인 설정 파일
+ */
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    host: "0.0.0.0", // 네트워크 내 다른 기기에서 접속 허용
+  },
+});
+

@@ -2,45 +2,37 @@ import React, { useRef, useEffect } from "react";
 import { useTimeline } from "./hooks/useTimeline";
 import "../../styles/timeline.css";
 
+/**
+ * "범위(Range)" 타입 타임라인을 그리는 컴포넌트입니다.
+ * - groupKey: "EQP_STATUS" 또는 "TIP_STATUS" 등
+ * - data: 표시할 상태 데이터 배열
+ * - range: 타임라인 시간 범위
+ *
+ * 타임라인은 useTimeline 훅을 통해 생성/관리됩니다.
+ */
 const RangeTimeline = ({ groupKey, data, range }) => {
   const containerRef = useRef(null);
   const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
 
   useEffect(() => {
-    const timeline = timelineInstanceRef.current; // 실제 타임라인 인스턴스
+    // (특별한 이벤트 넣을 때 여기에 구현)
+    const timeline = timelineInstanceRef.current;
     if (timeline) {
-      const handlePointClick = (properties) => {
-        if (properties.item) {
-          const itemId = properties.item; // e.g., "EQP_STATUS-5"
-          const parts = itemId.split('-');
-          const itemIndex = parseInt(parts[parts.length - 1], 10);
-          const clickedItemData = data[itemIndex];
-
-          // Point 아이템 클릭 시 특별한 알림 표시 또는 상세 정보 팝업
-          if (clickedItemData) {
-            alert(`포인트 이벤트: ${clickedItemData.comment}`);
-          } else {
-            console.warn(`No data found for item ID: ${properties.item}`);
-          }
-        }
-      };
-
-      // 'click' 이벤트는 아이템, 빈 공간 등 어디든 클릭 시 발생
-      // 'select' 이벤트는 아이템 선택 시 발생
-      timeline.on("select", handlePointClick);
-
-      return () => {
-        timeline.off("select", handlePointClick);
-      };
+      // 예: timeline.on("select", ...) 등
+      timeline.on("select", (props) => {
+        console.log("RANGE select", props);
+      });
     }
   }, [timelineInstanceRef, data, groupKey]);
 
   return (
     <div className="timeline-container range-timeline">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold">{groupKey}</h2> {/* 타임라인 이름 */}
-        <div className="flex space-x-4"> {/* 범례 */}</div>
+        <h2 className="text-lg font-bold">{groupKey}</h2>
+        {/* 필요시 범례 등 추가 */}
+        <div className="flex space-x-4"></div>
       </div>
+      {/* 실제 타임라인이 그려질 영역 */}
       <div ref={containerRef} className="timeline" />
     </div>
   );

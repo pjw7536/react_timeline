@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // react-router-dom의 Link 임포트
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogPanel,
@@ -19,8 +19,8 @@ import {
   FingerPrintIcon,
   SquaresPlusIcon,
   XMarkIcon,
-  SunIcon, // 다크모드 토글용 아이콘
-  MoonIcon, // 다크모드 토글용 아이콘
+  SunIcon,
+  MoonIcon,
 } from "@heroicons/react/24/outline";
 import {
   ChevronDownIcon,
@@ -28,35 +28,35 @@ import {
   PlayCircleIcon,
 } from "@heroicons/react/20/solid";
 
-// Product 드롭다운 데이터 (예시 유지)
+// "Product" 드롭다운에 사용될 예시 데이터
 const products = [
   {
     name: "Analytics",
-    description: "Get a better understanding of your traffic",
-    href: "#", // 필요시 Link to="" 로 변경
+    description: "트래픽 분석",
+    href: "#",
     icon: ChartPieIcon,
   },
   {
     name: "Engagement",
-    description: "Speak directly to your customers",
+    description: "고객 소통",
     href: "#",
     icon: CursorArrowRaysIcon,
   },
   {
     name: "Security",
-    description: "Your customers’ data will be safe and secure",
+    description: "데이터 보안",
     href: "#",
     icon: FingerPrintIcon,
   },
   {
     name: "Integrations",
-    description: "Connect with third-party tools",
+    description: "외부 연동",
     href: "#",
     icon: SquaresPlusIcon,
   },
   {
     name: "Automations",
-    description: "Build strategic funnels that will convert",
+    description: "자동화",
     href: "#",
     icon: ArrowPathIcon,
   },
@@ -67,10 +67,11 @@ const callsToAction = [
 ];
 
 export default function Navbar() {
+  // 모바일 메뉴와 다크모드 상태를 관리
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
-  // 컴포넌트 마운트 시 localStorage에서 테마 설정을 불러옵니다.
+  // 컴포넌트가 처음 마운트될 때, localStorage나 OS 기본 테마를 기준으로 다크모드 설정을 결정
   useEffect(() => {
     const isDark =
       localStorage.theme === "dark" ||
@@ -84,7 +85,7 @@ export default function Navbar() {
     }
   }, []);
 
-  // 다크모드 상태 변경 시 localStorage에 저장하고 html 클래스를 업데이트합니다.
+  // 다크모드 토글 (버튼 클릭 시 실행)
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
@@ -98,25 +99,25 @@ export default function Navbar() {
   };
 
   return (
-    // 헤더 배경 및 텍스트 색상 다크모드 적용
+    // 상단 고정 네비게이션 바
     <header className="bg-gray-100 dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <nav
         aria-label="Global"
         className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
       >
+        {/* 로고: 메인 페이지로 이동 */}
         <div className="flex lg:flex-1">
-          {/* 로고는 react-router-dom Link로 변경 */}
           <Link to="/" className="-m-1.5 p-1.5">
             <span className="sr-only">Your Company</span>
             <img
               alt="Company Logo"
-              src="https://tailwindcss.com/plus-assets/img/logos/158x48/transistor-logo-gray-900.svg" // 로고 이미지
+              src="https://tailwindcss.com/plus-assets/img/logos/158x48/transistor-logo-gray-900.svg"
               className="h-8 w-auto"
             />
           </Link>
         </div>
+        {/* 모바일 메뉴 버튼 (작은 화면에서만 보임) */}
         <div className="flex lg:hidden">
-          {/* 모바일 메뉴 버튼 색상 다크모드 적용 */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -126,27 +127,23 @@ export default function Navbar() {
             <Bars3Icon aria-hidden="true" className="size-6" />
           </button>
         </div>
-        {/* 데스크탑 네비게이션 */}
+        {/* 데스크탑 메뉴: Product, Timeline 등 네비게이션 */}
         <PopoverGroup className="hidden lg:flex lg:gap-x-12">
           <Popover className="relative">
-            {/* Product 버튼 텍스트 색상 다크모드 적용 */}
             <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-900 dark:text-gray-100 focus:outline-none">
               Product
-              {/* Chevron 아이콘 색상 다크모드 적용 */}
               <ChevronDownIcon
                 aria-hidden="true"
                 className="size-5 flex-none text-gray-400 dark:text-gray-500"
               />
             </PopoverButton>
-
+            {/* Product 드롭다운 패널 */}
             <PopoverPanel
               transition
-              // Product 패널 배경, 링, 텍스트 색상 다크모드 적용
-              className="absolute top-full -left-8 z-20 mt-3 w-screen max-w-md overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-900/5 dark:ring-white/10 transition data-closed:translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
+              className="absolute top-full -left-8 z-20 mt-3 w-screen max-w-md overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-900/5 dark:ring-white/10 transition"
             >
               <div className="p-4">
                 {products.map((item) => (
-                  // Product 아이템 호버 배경, 아이콘 배경/색상, 텍스트 색상 다크모드 적용
                   <div
                     key={item.name}
                     className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -158,7 +155,7 @@ export default function Navbar() {
                       />
                     </div>
                     <div className="flex-auto">
-                      <a // 외부링크 또는 기능링크이므로 a 태그 유지 (내부 라우팅 시 Link로 변경)
+                      <a
                         href={item.href}
                         className="block font-semibold text-gray-900 dark:text-gray-100"
                       >
@@ -172,10 +169,10 @@ export default function Navbar() {
                   </div>
                 ))}
               </div>
+              {/* 하단 액션 버튼 */}
               <div className="grid grid-cols-2 divide-x divide-gray-900/5 dark:divide-white/10 bg-gray-50 dark:bg-gray-700/50">
                 {callsToAction.map((item) => (
-                  // Call to action 아이템 호버 배경, 아이콘 색상, 텍스트 색상 다크모드 적용
-                  <a // 외부링크 또는 기능링크이므로 a 태그 유지
+                  <a
                     key={item.name}
                     href={item.href}
                     className="flex items-center justify-center gap-x-2.5 p-3 text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -190,15 +187,13 @@ export default function Navbar() {
               </div>
             </PopoverPanel>
           </Popover>
-
-          {/* Timeline 링크는 react-router-dom Link로 변경, 텍스트 색상 다크모드 적용 */}
+          {/* 타임라인 페이지로 이동하는 메뉴 */}
           <Link
             to="/timeline"
             className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
           >
             Timeline
           </Link>
-          {/* Marketplace, Company 링크는 예시로 a 태그 유지, 텍스트 색상 다크모드 적용 */}
           <a
             href="#"
             className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -212,8 +207,8 @@ export default function Navbar() {
             Company
           </a>
         </PopoverGroup>
+        {/* 데스크탑: 다크모드 토글 + 로그인 */}
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:gap-x-6">
-          {/* 다크모드 토글 버튼 */}
           <button
             onClick={toggleDarkMode}
             className="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
@@ -225,23 +220,21 @@ export default function Navbar() {
               <MoonIcon className="size-6" />
             )}
           </button>
-          {/* Log in 링크 텍스트 색상 다크모드 적용 */}
           <a
-            href="#" // 필요시 Link to="/login" 등으로 변경
+            href="#"
             className="text-sm/6 font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400"
           >
             Log in <span aria-hidden="true">&rarr;</span>
           </a>
         </div>
       </nav>
-      {/* 모바일 메뉴 Dialog */}
+      {/* 모바일 메뉴 다이얼로그: 작은 화면에서만 열림 */}
       <Dialog
         open={mobileMenuOpen}
         onClose={setMobileMenuOpen}
         className="lg:hidden"
       >
-        <div className="fixed inset-0 z-20" /> {/* z-index 조정 */}
-        {/* 모바일 패널 배경, 링, 텍스트 색상 다크모드 적용 */}
+        <div className="fixed inset-0 z-20" />
         <DialogPanel className="fixed inset-y-0 right-0 z-30 w-full overflow-y-auto bg-white dark:bg-gray-800 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 dark:sm:ring-white/10">
           <div className="flex items-center justify-between">
             <Link
@@ -256,7 +249,6 @@ export default function Navbar() {
                 className="h-8 w-auto"
               />
             </Link>
-            {/* 모바일 닫기 버튼 색상 다크모드 적용 */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
@@ -269,8 +261,8 @@ export default function Navbar() {
           <div className="mt-6 flow-root">
             <div className="-my-6 divide-y divide-gray-500/10 dark:divide-gray-700">
               <div className="space-y-2 py-6">
+                {/* Product 드롭다운 (모바일) */}
                 <Disclosure as="div" className="-mx-3">
-                  {/* 모바일 Product 버튼 텍스트, 호버 배경 색상 다크모드 적용 */}
                   <DisclosureButton className="group flex w-full items-center justify-between rounded-lg py-2 pr-3.5 pl-3 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
                     Product
                     <ChevronDownIcon
@@ -280,8 +272,7 @@ export default function Navbar() {
                   </DisclosureButton>
                   <DisclosurePanel className="mt-2 space-y-2">
                     {[...products, ...callsToAction].map((item) => (
-                      // 모바일 Product 아이템 텍스트, 호버 배경 색상 다크모드 적용
-                      <DisclosureButton // 내부 링크라면 Link 컴포넌트로 변경
+                      <DisclosureButton
                         key={item.name}
                         as="a"
                         href={item.href}
@@ -293,7 +284,7 @@ export default function Navbar() {
                     ))}
                   </DisclosurePanel>
                 </Disclosure>
-                {/* 모바일 Timeline, Features 등 링크 텍스트, 호버 배경 색상 다크모드 적용 */}
+                {/* 주요 메뉴들 */}
                 <Link
                   to="/timeline"
                   onClick={() => setMobileMenuOpen(false)}
@@ -317,7 +308,7 @@ export default function Navbar() {
                 </a>
               </div>
               <div className="py-6">
-                {/* 모바일 다크모드 토글 버튼 */}
+                {/* 다크모드 토글 (모바일) */}
                 <button
                   onClick={() => {
                     toggleDarkMode();
@@ -333,7 +324,7 @@ export default function Navbar() {
                   )}
                   {darkMode ? "라이트 모드" : "다크 모드"}
                 </button>
-                <a // 필요시 Link로 변경
+                <a
                   href="#"
                   onClick={() => setMobileMenuOpen(false)}
                   className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"

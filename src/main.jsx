@@ -3,19 +3,26 @@ import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TimelineProvider } from "./context/TimelineProvider";
-import { BrowserRouter } from "react-router-dom"; // 라우터 임포트
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
+// React Query의 전역 클라이언트(캐시 등)
 const qc = new QueryClient();
 
+/**
+ * 프로젝트의 최상위 엔트리포인트입니다.
+ * - StrictMode: React 개발용 경고/검사를 강화합니다.
+ * - QueryClientProvider: React Query 전역 상태 제공
+ * - TimelineProvider: 타임라인 동기화 컨텍스트 제공
+ * - BrowserRouter: 라우팅 기능 제공
+ * - App: 실제 앱 화면 (Navbar 및 각 페이지)
+ */
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <TimelineProvider>
         <BrowserRouter>
-          {" "}
-          {/* App을 BrowserRouter로 감싸줍니다. */}
           <App />
         </BrowserRouter>
       </TimelineProvider>

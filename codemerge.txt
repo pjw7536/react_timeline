@@ -1,0 +1,11 @@
+> # 결과 파일 미리 삭제
+>> Remove-Item all_code.txt -ErrorAction SilentlyContinue
+>>
+>> Get-ChildItem -Recurse -Include *.js,*.jsx,*.css,*.html -File |
+>>     Where-Object { $_.FullName -notmatch "node_modules" } |
+>>     ForEach-Object {
+>>         # 파일 구분자 쓰기
+>>         "`n----- $($_.FullName) -----`n" | Out-File -FilePath all_code.txt -Encoding utf8BOM -Append
+>>         # 파일 내용 쓰기
+>>         Get-Content $_.FullName -Raw | Out-File -FilePath all_code.txt -Encoding utf8BOM -Append
+>>     }

@@ -1,7 +1,10 @@
 import React from "react";
 
-// EVENT 로그 데이터를 표시하는 테이블 컴포넌트
-const EventLogTable = ({ data }) => {
+/**
+ * EVENT 로그 전용 테이블.
+ * - data: [{ occurred_at, event_type, comment }]
+ */
+const RACBLogTable = ({ data }) => {
   if (!data || data.length === 0) {
     return (
       <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -48,4 +51,4 @@ const EventLogTable = ({ data }) => {
   );
 };
 
-export default EventLogTable;
+export default RACBLogTable;

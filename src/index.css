@@ -1,4 +1,5 @@
-
 @import "tailwindcss";
+
+/* Tailwind의 dark 모드 스타일 활성화 및 timeline.css 커스텀 스타일 불러오기 */
 @custom-variant dark (&:where(.dark, .dark *));
 @import "./styles/timeline.css";

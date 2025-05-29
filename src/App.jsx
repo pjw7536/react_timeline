@@ -1,8 +1,13 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom"; // Routes와 Route를 임포트합니다.
-import Navbar from "./components/common/Navbar"; // Navbar 컴포넌트를 임포트합니다.
-import TimelinePage from "./pages/TimelinePage"; // TimelinePage 컴포넌트를 임포트합니다.
-// 홈페이지용 간단한 컴포넌트 (필요에 따라 수정하거나 별도 파일로 분리)
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./components/common/Navbar";
+import TimelinePage from "./pages/TimelinePage";
+
+/**
+ * 앱의 메인 컴포넌트입니다.
+ * - 항상 상단에 Navbar(네비게이션 바)를 보여줍니다.
+ * - / (홈) 및 /timeline (타임라인 페이지) 라우팅을 지원합니다.
+ */
 const HomePage = () => (
   <div className="p-6 text-center">
     <h1 className="text-2xl font-bold">홈페이지에 오신 것을 환영합니다!</h1>
@@ -13,7 +18,9 @@ const HomePage = () => (
 function App() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
+      {/* 항상 상단에 표시되는 네비게이션 바 */}
       <Navbar />
+      {/* 아래쪽 영역(페이지 본문) */}
       <div className="flex-1 overflow-hidden">
         <Routes>
           <Route path="/" element={<HomePage />} />

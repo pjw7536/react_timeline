@@ -1,7 +1,11 @@
 import React from "react";
 
-// 모든 데이터를 통합하여 표시하는 테이블 컴포넌트
+/**
+ * 여러 데이터 타입(RUN/STEP/EVENT 등)을 시간순으로 통합해서 보여주는 테이블입니다.
+ * - data: [{displayTimestamp, type, info1, info2, info3, ...}] 형태의 배열
+ */
 const CombinedDataTable = ({ data }) => {
+  // 데이터 없으면 안내 메시지
   if (!data || data.length === 0) {
     return (
       <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -10,7 +14,7 @@ const CombinedDataTable = ({ data }) => {
     );
   }
 
-  // 컬럼 정의 (데이터 구조에 따라 유연하게 조정 가능)
+  // 테이블 컬럼 정의 (필요에 따라 수정 가능)
   const columns = [
     { header: "시간", accessor: "displayTimestamp" },
     { header: "타입", accessor: "type" },
@@ -50,8 +54,7 @@ const CombinedDataTable = ({ data }) => {
                     key={col.accessor}
                     className="px-6 py-4 whitespace-nowrap"
                   >
-                    {item[col.accessor] || "-"}{" "}
-                    {/* 데이터가 없는 경우 '-' 표시 */}
+                    {item[col.accessor] || "-"}
                   </td>
                 ))}
               </tr>

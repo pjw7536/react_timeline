@@ -5,16 +5,17 @@ import EqpSelector from "../components/selectors/EqpSelector";
 import TimelineBoard from "../components/timeline/TimelineBoard";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import CombinedDataTable from "../components/tables/CombinedDataTable";
-import { useRunStatus } from "../hooks/useRunStatus";
-import { useStepStatus } from "../hooks/useStepStatus";
-import { useEventLog } from "../hooks/useEventLog";
+import { useEqpStatus } from "../hooks/useEqpStatus";
+import { useTipLog } from "../hooks/useTIPLog";
+import { useRacbLog } from "../hooks/useRacbLog";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 
 // 데이터 타입 상수 정의
 const DATA_TYPES = {
-  RUN: "EQP_STATUS", // 설비 실행 상태
-  STEP: "TIP_STATUS", // 공정 단계
-  EVENT: "EQP_INTERLOCK", // 이벤트 로그
+  EQP: "EQP_STATUS", // 설비 상태
+  TIP: "TIP_STATUS", // 공정 단계
+  RACB: "RACB_LOG", // 이벤트 로그
+  CTTTM: "CTTTM_LOG", // 이벤트 로그
 };
 
 const TimelinePage = () => {
@@ -23,15 +24,15 @@ const TimelinePage = () => {
   const [eqpId, setEqpId] = useState(null); // 선택된 설비 ID
   const [typeFilters, setTypeFilters] = useState({
     // 데이터 타입별 필터 상태
-    [DATA_TYPES.RUN]: true,
-    [DATA_TYPES.STEP]: true,
-    [DATA_TYPES.EVENT]: true,
+    [DATA_TYPES.EQP]: true,
+    [DATA_TYPES.TIP]: true,
+    [DATA_TYPES.RACB]: true,
   });
 
   // 각 데이터 타입별 API 호출 및 로딩 상태
-  const { data: runData = [], isLoading: l1 } = useRunStatus(eqpId);
-  const { data: stepData = [], isLoading: l2 } = useStepStatus(eqpId);
-  const { data: eventData = [], isLoading: l3 } = useEventLog(eqpId);
+  const { data: runData = [], isLoading: l1 } = useEqpStatus(eqpId);
+  const { data: stepData = [], isLoading: l2 } = useTipLog(eqpId);
+  const { data: eventData = [], isLoading: l3 } = useRacbLog(eqpId);
 
   const isLoading = l1 || l2 || l3; // 전체 로딩 상태
 
@@ -43,7 +44,7 @@ const TimelinePage = () => {
     const transformedRun = runData.map((item) => ({
       originalTimestamp: new Date(item.timestamp),
       displayTimestamp: new Date(item.timestamp).toLocaleString(),
-      type: DATA_TYPES.RUN,
+      type: DATA_TYPES.EQP,
       info1: item.status,
       info2: "",
       info3: "",
@@ -53,7 +54,7 @@ const TimelinePage = () => {
     const transformedStep = stepData.map((item) => ({
       originalTimestamp: new Date(item.start_time),
       displayTimestamp: new Date(item.start_time).toLocaleString(),
-      type: DATA_TYPES.STEP,
+      type: DATA_TYPES.TIP,
       info1: item.step,
       info2: item.ppid,
       info3: item.state,
@@ -63,7 +64,7 @@ const TimelinePage = () => {
     const transformedEvent = eventData.map((item) => ({
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
-      type: DATA_TYPES.EVENT,
+      type: DATA_TYPES.RACB,
       info1: item.event_type,
       info2: item.comment,
       info3: "",
