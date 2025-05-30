@@ -20,7 +20,6 @@ const CombinedDataTable = ({ data }) => {
     { header: "타입", accessor: "type" },
     { header: "정보 1", accessor: "info1" },
     { header: "정보 2", accessor: "info2" },
-    { header: "정보 3", accessor: "info3" },
   ];
 
   return (

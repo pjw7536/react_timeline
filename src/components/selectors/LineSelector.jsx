@@ -20,7 +20,7 @@ const LineSelector = ({ lineId, setLineId }) => {
         value={lineId ?? ""}
         onChange={(e) => setLineId(Number(e.target.value))}
         className={
-          "w-full appearance-none block px-3 py-2.5 border border-slate-300 dark:border-slate-600 " +
+          "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +
           "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +
           "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 " +
           "text-sm text-slate-900 dark:text-slate-100 " +

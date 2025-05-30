@@ -6,7 +6,7 @@ import * as api from "../api/historyAPI";
  * - eqpId가 있을 때만 동작
  * - 캐시 유지 시간: 30분
  */
-export const useEqpStatus = (eqpId) =>
+export const useEqpStatusLog = (eqpId) =>
   useQuery({
     queryKey: ["run", eqpId],
     queryFn: () => api.fetchEQPStatus(eqpId).then((r) => r.data),

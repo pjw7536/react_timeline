@@ -7,7 +7,7 @@
  *    - columns: 시간, 상태, 설명(코멘트) 컬럼명
  */
 export const groupConfig = {
-  EQP_STATUS: {
+  EQP_LOG: {
     type: "range",
     options: {},
     stateColors: {
@@ -22,7 +22,7 @@ export const groupConfig = {
       comment: "status",
     },
   },
-  TIP_STATUS: {
+  TIP_LOG: {
     type: "range",
     options: {},
     stateColors: {

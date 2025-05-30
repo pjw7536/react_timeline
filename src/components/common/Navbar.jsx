@@ -100,10 +100,10 @@ export default function Navbar() {
 
   return (
     // 상단 고정 네비게이션 바
-    <header className="bg-gray-100 dark:bg-gray-800 shadow-md sticky top-0 z-50">
+    <header className="bg-gray-100 dark:bg-gray-800 shadow-md sticky top-0 z-50  h-20">
       <nav
         aria-label="Global"
-        className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
+        className="mx-auto flex max-w-7xl items-center justify-between p-5 lg:px-8"
       >
         {/* 로고: 메인 페이지로 이동 */}
         <div className="flex lg:flex-1">

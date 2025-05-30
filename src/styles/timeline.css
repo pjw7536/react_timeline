@@ -49,3 +49,8 @@
   @apply border-2 border-amber-500;
   z-index: 10;
 }
+
+.vis-time-axis .vis-text,
+.vis-time-axis .vis-label {
+  font-size: 13px !important;
+}

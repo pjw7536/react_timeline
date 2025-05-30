@@ -21,7 +21,7 @@ function App() {
       {/* 항상 상단에 표시되는 네비게이션 바 */}
       <Navbar />
       {/* 아래쪽 영역(페이지 본문) */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden px-6">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/timeline" element={<TimelinePage />} />
