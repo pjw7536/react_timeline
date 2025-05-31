@@ -3,3 +3,36 @@
 /* Tailwind의 dark 모드 스타일 활성화 및 timeline.css 커스텀 스타일 불러오기 */
 @custom-variant dark (&:where(.dark, .dark *));
 @import "./styles/timeline.css";
+
+
+/* 🔹 공통: 슬림 스크롤바 디자인 */
+.table-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  /* 🔸 기본(라이트모드) 스타일 */
+  .table-scroll::-webkit-scrollbar-track {
+    background-color: #e2e8f0; /* slate-200 */
+    border-radius: 10px;
+  }
+  .table-scroll::-webkit-scrollbar-thumb {
+    background-color: #94a3b8; /* slate-400 */
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* 🔸 다크모드 스타일 */
+  .dark .table-scroll::-webkit-scrollbar-track {
+    background-color: #1e293b; /* slate-800 */
+  }
+  .dark .table-scroll::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+    border: 1px solid #1e293b;
+  }
+  
+  /* 🔸 호버 시 더 진하게 */
+  .dark .table-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b; /* slate-500 */
+  }
+  

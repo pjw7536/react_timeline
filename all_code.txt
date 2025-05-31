@@ -622,13 +622,36 @@ export default SDWTSelector;
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\tables\CombinedDataTable.jsx -----
 
-import React from "react";
+import { useRef, useEffect } from "react";
+import { useSelection } from "../../context/SelectionContext";
 
 /**
  * 여러 데이터 타입(RUN/STEP/EVENT 등)을 시간순으로 통합해서 보여주는 테이블입니다.
  * - data: [{displayTimestamp, type, info1, info2, info3, ...}] 형태의 배열
  */
 const CombinedDataTable = ({ data }) => {
+  const { selectedRow, setSelectedRow } = useSelection();
+  const rowRefs = useRef({});
+
+  useEffect(() => {
+    if (selectedRow && rowRefs.current[selectedRow]) {
+      rowRefs.current[selectedRow].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else if (selectedRow) {
+      // 렌더 타이밍 문제로 100ms 후 재시도
+      setTimeout(() => {
+        if (rowRefs.current[selectedRow]) {
+          rowRefs.current[selectedRow].scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+    }
+  }, [selectedRow, data]);
+
   // 데이터 없으면 안내 메시지
   if (!data || data.length === 0) {
     return (
@@ -638,7 +661,7 @@ const CombinedDataTable = ({ data }) => {
     );
   }
 
-  // 테이블 컬럼 정의 (필요에 따라 수정 가능)
+  // 테이블 컬럼 정의
   const columns = [
     { header: "시간", accessor: "displayTimestamp" },
     { header: "타입", accessor: "type" },
@@ -651,37 +674,50 @@ const CombinedDataTable = ({ data }) => {
       <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
         통합 데이터 로그
       </h3>
-      <div className="overflow-y-auto max-h-96">
+      <div className="overflow-y-auto max-h-135 table-scroll">
         <table className="w-full text-sm text-center text-gray-800 dark:text-gray-200">
           <thead className="sticky top-0 bg-gray-50 text-gray-900 dark:bg-gray-600 dark:text-gray-100">
             <tr>
               {columns.map((col) => (
-                <th
-                  key={col.accessor}
-                  scope="col"
-                  className="px-6 py-3 whitespace-nowrap font-semibold"
-                >
+                <th key={col.accessor} className="px-6 py-3 font-semibold">
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr
-                key={index}
-                className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
-              >
-                {columns.map((col) => (
-                  <td
-                    key={col.accessor}
-                    className="px-6 py-4 whitespace-nowrap"
-                  >
-                    {item[col.accessor] || "-"}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {data.map((item) => {
+              const rowId = item.id;
+              const isSelected = String(rowId) === String(selectedRow);
+
+              console.log(
+                "rowId",
+                rowId,
+                "| selectedRow",
+                selectedRow,
+                "| match:",
+                isSelected
+              );
+
+              return (
+                <tr
+                  key={rowId}
+                  ref={(el) => (rowRefs.current[rowId] = el)}
+                  className={`transition-colors duration-300 ${
+                    isSelected
+                      ? "bg-yellow-100 dark:bg-yellow-800"
+                      : "bg-white dark:bg-gray-800"
+                  }`}
+                  onClick={() => setSelectedRow(rowId)}
+                >
+                  {columns.map((col) => (
+                    <td key={col.accessor} className="px-6 py-4">
+                      {item[col.accessor] || "-"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -837,94 +873,254 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 };
 
 
------ C:\Users\pjw75\Desktop\react-prc\src\components\timeline\PointTimeline.jsx -----
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\NonStackedTimeline.jsx -----
 
-import React, { useRef, useEffect } from "react";
-import { useTimeline } from "./hooks/useTimeline";
-import "../../styles/timeline.css";
+// src/components/timeline/NonStackedTimeline.jsx
+import React, { useEffect, useRef, useContext } from "react";
+import { Timeline, DataSet } from "vis-timeline/standalone";
+import { processData } from "../../utils/timelineUtils";
+import { TimelineContext } from "../../context/TimelineProvider";
+import { useSelection } from "../../context/SelectionContext";
 
-/**
- * "포인트(점)" 타입 타임라인을 그리는 컴포넌트입니다.
- * - groupKey: "EQP_INTERLOCK" 등
- * - data: 표시할 이벤트 데이터 배열
- * - range: 타임라인 시간 범위
- *
- * 타임라인은 useTimeline 훅을 통해 생성/관리됩니다.
- */
-const PointTimeline = ({ groupKey, data, range }) => {
+const NonStackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
-  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
+  const { register, unregister, poolRef } = useContext(TimelineContext);
+  const { selectedRow, setSelectedRow } = useSelection();
+
+  const groups = new DataSet([
+    {
+      id: "EQP_LOG",
+      content: "EQP 상태",
+      style: "width: 120px;",
+      className: "custom-group-label",
+    },
+    {
+      id: "TIP_LOG",
+      content: "TIP 상태",
+      style: "width: 120px;",
+      className: "custom-group-label",
+    },
+  ]);
 
   useEffect(() => {
-    // (특별한 클릭 이벤트 등 넣을 때 여기에 구현)
-    const timeline = timelineInstanceRef.current;
-    if (timeline) {
-      // 예: timeline.on("select", ...) 등
-      timeline.on("select", (props) => {
-        console.log("POINT select", props);
+    const items = new DataSet(
+      groups
+        .get()
+        .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
+    );
+
+    const timeline = new Timeline(containerRef.current, items, groups, {
+      stack: false,
+      min: range.min,
+      max: range.max,
+      margin: { item: 0, axis: 0 },
+      verticalScroll: false,
+      groupOrder: (a, b) =>
+        groups.get().findIndex((g) => g.id === a.id) -
+        groups.get().findIndex((g) => g.id === b.id),
+    });
+
+    timeline.setWindow(range.min, range.max);
+    register(timeline);
+
+    const sync = ({ start, end }) => {
+      poolRef.current.forEach((tl) => {
+        if (tl !== timeline) tl.setWindow(start, end, { animation: false });
       });
+    };
+    timeline.on("rangechange", sync);
+
+    timeline.on("select", (props) => {
+      if (props.items?.length) {
+        const selectedItem = timeline.itemsData.get(props.items[0]);
+        const matchedId = selectedItem?.id;
+        if (matchedId) {
+          setSelectedRow(matchedId); // 정확한 ID 저장
+        }
+      } else {
+        setSelectedRow(null);
+      }
+    });
+
+    return () => {
+      unregister(timeline);
+      timeline.off("rangechange", sync);
+      timeline.destroy();
+    };
+  }, [dataMap, range]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // 1) pool 에서 내 타임라인을 찾는다
+    const tl = poolRef.current.find(
+      (t) => t.dom?.container === containerRef.current
+    );
+    if (!tl) return;
+
+    // 2) 현재 선택된 ID가 이 타임라인 안에 있는지 확인
+    const hasItem =
+      tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
+
+    if (selectedRow && hasItem) {
+      tl.setSelection([selectedRow]);
+      //tl.focus(selectedRow, { animation: { duration: 300 }, zoom: false });
+    } else {
+      tl.setSelection([]); // 없으면 선택 해제
     }
-  }, [timelineInstanceRef, data, groupKey]);
+  }, [selectedRow, poolRef]);
 
   return (
-    <div className="timeline-container point-timeline">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold">{groupKey}</h2>
-        {/* 필요시 범례 등 추가 */}
-        <div className="flex space-x-4"></div>
-      </div>
-      {/* 실제 타임라인이 그려질 영역 */}
+    <div className="timeline-container">
+      <h3 className="text-sm font-semibold mb-1 text-slate-600 dark:text-slate-300">
+        ⛓ EQP + TIP 로그
+      </h3>
       <div ref={containerRef} className="timeline" />
     </div>
   );
 };
 
-export default PointTimeline;
+export default NonStackedTimeline;
 
 
------ C:\Users\pjw75\Desktop\react-prc\src\components\timeline\RangeTimeline.jsx -----
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\StackedTimeline.jsx -----
 
-import React, { useRef, useEffect } from "react";
-import { useTimeline } from "./hooks/useTimeline";
-import "../../styles/timeline.css";
+// src/components/timeline/StackedTimeline.jsx
+import React, { useEffect, useRef, useContext } from "react";
+import { Timeline, DataSet } from "vis-timeline/standalone";
+import { processData } from "../../utils/timelineUtils";
+import { TimelineContext } from "../../context/TimelineProvider";
+import { useSelection } from "../../context/SelectionContext";
 
-/**
- * "범위(Range)" 타입 타임라인을 그리는 컴포넌트입니다.
- * - groupKey: "EQP_STATUS" 또는 "TIP_STATUS" 등
- * - data: 표시할 상태 데이터 배열
- * - range: 타임라인 시간 범위
- *
- * 타임라인은 useTimeline 훅을 통해 생성/관리됩니다.
- */
-const RangeTimeline = ({ groupKey, data, range }) => {
+const StackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
-  const timelineInstanceRef = useTimeline(containerRef, groupKey, data, range);
+  const { register, unregister, poolRef } = useContext(TimelineContext);
+  const { selectedRow, setSelectedRow } = useSelection();
+
+  // 그룹 정의 (고정 너비 설정)
+  const groups = new DataSet([
+    {
+      id: "CTTTM_LOG",
+      content: "CTTTM 이벤트",
+      height: 150,
+      className: "custom-group-label",
+    },
+    {
+      id: "RACB_LOG",
+      content: "RACB 이벤트",
+      height: 150,
+      className: "custom-group-label",
+    },
+  ]);
 
   useEffect(() => {
-    // (특별한 이벤트 넣을 때 여기에 구현)
-    const timeline = timelineInstanceRef.current;
-    if (timeline) {
-      // 예: timeline.on("select", ...) 등
-      timeline.on("select", (props) => {
-        console.log("RANGE select", props);
+    // items 구성 시 배열로 변환하여 flatMap 사용
+    const items = new DataSet(
+      groups
+        .get()
+        .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
+    );
+
+    const timeline = new Timeline(containerRef.current, items, groups, {
+      height: "550px",
+      stack: true,
+      min: range.min,
+      max: range.max,
+      locale: "ko",
+      verticalScroll: false,
+      margin: { item: 0, axis: 0 },
+
+      groupHeightMode: "fixed",
+
+      groupOrder: (a, b) =>
+        groups.get().findIndex((g) => g.id === a.id) -
+        groups.get().findIndex((g) => g.id === b.id),
+    });
+
+    timeline.setWindow(range.min, range.max);
+    register(timeline);
+
+    const sync = ({ start, end }) => {
+      poolRef.current.forEach((tl) => {
+        if (tl !== timeline) {
+          tl.setWindow(start, end, { animation: false });
+        }
       });
+    };
+    timeline.on("rangechange", sync);
+
+    // ✅ 선택 이벤트 연결
+    timeline.on("select", (props) => {
+      // 방어코드 추가
+      const selectedId = props.items?.[0];
+      if (selectedId && typeof selectedId === "string") {
+        setSelectedRow(selectedId);
+      } else {
+        setSelectedRow(null);
+      }
+    });
+
+    return () => {
+      unregister(timeline);
+      timeline.off("rangechange", sync);
+      timeline.destroy();
+    };
+  }, [dataMap, range]);
+
+  /* 🔄 2-way sync: 컨텍스트가 변하면 타임라인도 선택·포커스 */
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // 1) pool 에서 내 타임라인을 찾는다
+    const tl = poolRef.current.find(
+      (t) => t.dom?.container === containerRef.current
+    );
+    if (!tl) return;
+
+    // 2) 현재 선택된 ID가 이 타임라인 안에 있는지 확인
+    // 2-1) selectedRow가 없거나, string 타입이 아닌 경우 리턴
+    if (!selectedRow || typeof selectedRow !== "string") {
+      tl.setSelection([]);
+      return;
     }
-  }, [timelineInstanceRef, data, groupKey]);
+
+    // 2-2) itemsData에 실제로 존재하는 아이템인지 체크
+    const hasItem =
+      tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
+
+    if (hasItem) {
+      tl.setSelection([selectedRow]);
+      try {
+        tl.focus(selectedRow, { animation: { duration: 300 } });
+      } catch (e) {
+        // 에러 발생 시(예: 아이템이 사라졌거나 애니메이션 불가 등) 안전하게 무시
+        console.warn("Timeline focus error:", e);
+      }
+    } else {
+      tl.setSelection([]);
+      // 🚨🚨🚨 없는 selectedRow는 자동 초기화 (여기선 내부적으로만)
+      if (selectedRow) setSelectedRow(null);
+    }
+  }, [selectedRow, poolRef, setSelectedRow]);
 
   return (
-    <div className="timeline-container range-timeline">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold">{groupKey}</h2>
-        {/* 필요시 범례 등 추가 */}
-        <div className="flex space-x-4"></div>
-      </div>
-      {/* 실제 타임라인이 그려질 영역 */}
-      <div ref={containerRef} className="timeline" />
+    <div className="timeline-container">
+      <h3 className="text-sm font-semibold mb-1 text-slate-600 dark:text-slate-300">
+        📍 CTTTM + RACB 로그
+      </h3>
+      <div
+        ref={containerRef}
+        className="timeline"
+        style={{
+          height: "550px", // ✅ 고정 높이
+          overflow: "hidden", // ✅ 스크롤 방지
+        }}
+      />
     </div>
   );
 };
 
-export default RangeTimeline;
+export default StackedTimeline;
 
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\TimelineBoard.jsx -----
@@ -934,46 +1130,171 @@ import { useEqpStatusLog } from "../../hooks/useEqpStatusLog";
 import { useTipLog } from "../../hooks/useTIPLog";
 import { useRacbLog } from "../../hooks/useRacbLog";
 import { useCtttmLog } from "../../hooks/useCTTTMLog";
-import RangeTimeline from "./RangeTimeline";
-import PointTimeline from "./PointTimeline";
 import LoadingSpinner from "../common/LoadingSpinner";
+import NonStackedTimeline from "./NonStackedTimeline";
+import StackedTimeline from "./StackedTimeline";
 import { calcRange, addBuffer } from "../../utils/timelineUtils";
 
-/**
- * 하나의 EQP에 대해 EQP_LOG, TIP_LOG, RACB_LOG, CTTTM_LOG 타임라인을 모두 표시하는 컴포넌트입니다.
- * (X축 범위는 자동 동기화)
- * - eqpId: 장비 ID
- */
 const TimelineBoard = ({ eqpId }) => {
-  // 각 데이터 fetch (React Query 사용)
   const { data: eqp_log = [], isLoading: l1 } = useEqpStatusLog(eqpId);
   const { data: tip_log = [], isLoading: l2 } = useTipLog(eqpId);
   const { data: racb_log = [], isLoading: l3 } = useRacbLog(eqpId);
   const { data: ctttm_log = [], isLoading: l4 } = useCtttmLog(eqpId);
 
-  // 선택된 장비 없으면 아무것도 렌더링 안 함
   if (!eqpId) return null;
-  // 데이터 로딩 중일 때 스피너 표시
   if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
 
-  // 데이터 전체 시간 범위 계산 (최소~최대)
   const range = calcRange(eqp_log, tip_log, racb_log, ctttm_log);
-
-  // 3일 여유 범위 더하기 (양쪽 ±3일)
   const fullRange = addBuffer(range.min.getTime(), range.max.getTime());
 
-  // 세 개의 타임라인 출력 (범위 공유)
   return (
-    <div className="w-full">
-      <RangeTimeline groupKey="EQP_LOG" data={eqp_log} range={fullRange} />
-      <RangeTimeline groupKey="TIP_LOG" data={tip_log} range={fullRange} />
-      <RangeTimeline groupKey="RACB_LOG" data={racb_log} range={fullRange} />
-      <RangeTimeline groupKey="CTTTM_LOG" data={ctttm_log} range={fullRange} />
+    <div className="w-full space-y-4">
+      <NonStackedTimeline
+        dataMap={{ EQP_LOG: eqp_log, TIP_LOG: tip_log }}
+        range={fullRange}
+      />
+      <StackedTimeline
+        dataMap={{ CTTTM_LOG: ctttm_log, RACB_LOG: racb_log }}
+        range={fullRange}
+      />
     </div>
   );
 };
 
 export default TimelineBoard;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\UnifiedTimeline.jsx -----
+
+// src/components/timeline/UnifiedTimeline.jsx
+import React, { useEffect, useRef, useContext } from "react";
+import { Timeline, DataSet } from "vis-timeline/standalone";
+import { processData } from "../../utils/timelineUtils";
+import { TimelineContext } from "../../context/TimelineProvider";
+import { useSelection } from "../../context/SelectionContext";
+
+const UnifiedTimeline = ({ dataMap, range }) => {
+  const containerRef = useRef(null);
+  const { poolRef, register, unregister } = useContext(TimelineContext);
+  const { selectedRow, setSelectedRow } = useSelection();
+
+  // 그룹 순서 정의
+  const groupOrderList = ["EQP_LOG", "TIP_LOG", "CTTTM_LOG", "RACB_LOG"];
+
+  // 그룹별 stack 여부 정의
+  const groupStackMap = {
+    EQP_LOG: false,
+    TIP_LOG: false,
+    CTTTM_LOG: true,
+    RACB_LOG: true,
+  };
+
+  useEffect(() => {
+    const groups = new DataSet(
+      groupOrderList.map((key) => ({
+        id: key,
+        content: key,
+      }))
+    );
+
+    const items = new DataSet(
+      groupOrderList.flatMap((key) =>
+        processData(key, dataMap[key] || [], range.max)
+      )
+    );
+
+    const timeline = new Timeline(containerRef.current, items, groups, {
+      zoomMin: 1000 * 60 * 30,
+      zoomMax: 1000 * 60 * 60 * 24 * 30,
+      min: range.min,
+      max: range.max,
+      stack: true, // 기본 stack은 true지만,
+      groupStack: (groupId) => groupStackMap[groupId] ?? false,
+      groupOrder: (a, b) =>
+        groupOrderList.indexOf(a.id) - groupOrderList.indexOf(b.id),
+      verticalScroll: false,
+      margin: {
+        item: 0,
+        axis: 0,
+      },
+      format: {
+        minorLabels: {
+          millisecond: "SSS",
+          second: "s초",
+          minute: "HH:mm",
+          hour: "HH:mm",
+          weekday: "MM/DD(ddd)",
+          day: "DD(ddd)",
+          week: "w주",
+          month: "MM월",
+          year: "YY년",
+        },
+        majorLabels: {
+          millisecond: "HH:mm:ss",
+          second: "DD일 HH:mm",
+          minute: "MM/DD(ddd)",
+          hour: "MM/DD(ddd)",
+          weekday: "YYYY/MM",
+          day: "YYYY/MM",
+          week: "YYYY/MM",
+          month: "YYYY년",
+          year: "",
+        },
+      },
+    });
+
+    // 타임라인 select 이벤트 처리
+    timeline.on("select", function (props) {
+      if (props.items.length > 0) {
+        const selectedId = props.items[0]; // ex: "EQP_LOG-3"
+        setSelectedRow(selectedId); // 아이디 또는 timestamp 기반으로 설정
+      }
+    });
+
+    timeline.setWindow(range.min, range.max);
+    register(timeline);
+
+    const handleRangeChange = ({ start, end }) => {
+      poolRef.current.forEach((tl) => {
+        if (tl !== timeline) {
+          tl.setWindow(start, end, { animation: false });
+        }
+      });
+    };
+
+    timeline.on("rangechange", handleRangeChange);
+
+    /* 🔄 2-way sync: 컨텍스트가 변하면 타임라인도 선택·포커스 */
+    useEffect(() => {
+      if (!containerRef.current) return;
+      const tl = poolRef.current.find(
+        (t) => t.dom?.container === containerRef.current
+      );
+      if (!tl) return;
+
+      if (selectedRow) {
+        tl.setSelection([selectedRow]);
+        tl.focus(selectedRow, { animation: { duration: 300 } });
+      } else {
+        tl.setSelection([]);
+      }
+    }, [selectedRow, poolRef]);
+
+    return () => {
+      timeline.off("rangechange", handleRangeChange);
+      unregister(timeline);
+      timeline.destroy();
+    };
+  }, [dataMap, range, poolRef, register, unregister, setSelectedRow]);
+
+  return (
+    <div className="timeline-container unified-timeline">
+      <div ref={containerRef} className="timeline" />
+    </div>
+  );
+};
+
+export default UnifiedTimeline;
 
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\context\SelectionContext.jsx -----
@@ -1168,8 +1489,8 @@ import { ChartBarIcon } from "@heroicons/react/24/outline";
 import SDWTSelector from "../components/selectors/SDWTSelector";
 
 const DATA_TYPES = {
-  EQP: "EQP_STATUS",
-  TIP: "TIP_STATUS",
+  EQP: "EQP_LOG",
+  TIP: "TIP_LOG",
   RACB: "RACB_LOG",
   CTTTM: "CTTTM_LOG",
 };
@@ -1182,6 +1503,7 @@ const TimelinePage = () => {
     [DATA_TYPES.EQP]: true,
     [DATA_TYPES.TIP]: true,
     [DATA_TYPES.RACB]: true,
+    [DATA_TYPES.CTTTM]: true,
   });
 
   const { data: runData = [], isLoading: l1 } = useEqpStatusLog(eqpId);
@@ -1194,6 +1516,7 @@ const TimelinePage = () => {
     if (isLoading || !eqpId) return [];
 
     const transformedRun = runData.map((item) => ({
+      id: `${DATA_TYPES.EQP}-${new Date(item.timestamp).toISOString()}`,
       originalTimestamp: new Date(item.timestamp),
       displayTimestamp: new Date(item.timestamp).toLocaleString(),
       type: DATA_TYPES.EQP,
@@ -1203,6 +1526,7 @@ const TimelinePage = () => {
     }));
 
     const transformedStep = stepData.map((item) => ({
+      id: `${DATA_TYPES.TIP}-${new Date(item.start_time).toISOString()}`,
       originalTimestamp: new Date(item.start_time),
       displayTimestamp: new Date(item.start_time).toLocaleString(),
       type: DATA_TYPES.TIP,
@@ -1212,6 +1536,7 @@ const TimelinePage = () => {
     }));
 
     const transformedEvent = eventData.map((item) => ({
+      id: `${DATA_TYPES.RACB}-${new Date(item.occurred_at).toISOString()}`,
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.RACB,
@@ -1221,9 +1546,10 @@ const TimelinePage = () => {
     }));
 
     const transformedCTTTM = ctttmData.map((item) => ({
+      id: `${DATA_TYPES.CTTTM}-${new Date(item.occurred_at).toISOString()}`,
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
-      type: DATA_TYPES.CTTTM, // ✅ type 설정
+      type: DATA_TYPES.CTTTM,
       info1: item.event_type,
       info2: item.comment,
       info3: "",
@@ -1378,10 +1704,42 @@ export default TimelinePage;
   z-index: 10;
 }
 
+/* 이미 있는 .vis-item.selected 밑에 바로 이어서 넣어 주세요 */
+.vis-item.vis-range.selected {
+  outline: 3px dashed #fb923c !important;  /* amber-400 */
+  outline-offset: -1px;
+  filter: brightness(1.2);                 /* 살짝 강조 */
+}
+
+
 .vis-time-axis .vis-text,
 .vis-time-axis .vis-label {
   font-size: 13px !important;
 }
+
+/* 다크모드에서 타임라인 그룹 이름(라벨)을 흰색으로 */
+.dark .vis-time-axis .vis-text,
+.dark .vis-time-axis .vis-label {
+  color: #f1f5f9 !important;
+}
+
+.dark .vis-group .vis-label,
+.dark .vis-group .vis-inner {
+  color: #f1f5f9 !important;
+}
+
+/* 기본 */
+.vis-label.custom-group-label {
+  color: #334155; /* slate-800 */
+}
+
+/* 다크모드 */
+.dark .vis-label.custom-group-label {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+
+
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\utils\timelineMeta.js -----
 
@@ -1462,38 +1820,46 @@ import { groupConfig } from "./timelineMeta";
  * overallMaxTime: 마지막 아이템 끝 범위 (없으면 range.max)
  */
 export const processData = (groupKey, data) => {
+  /**
+   * 아이템 id는 groupKey-유니크값(timestamp 등)으로 생성해야
+   * 테이블-타임라인 연동이 100% 일치합니다!
+   */
   const cfg = groupConfig[groupKey];
   const { columns, stateColors } = cfg;
 
-  return data.map((row, idx) => {
-    const start = new Date(row[columns.time]);
-    const next = data[idx + 1];
-    // 마지막 아이템은 range.max까지 끝이 연장됩니다.
-    const end = next
-      ? new Date(next[columns.time])
-      : new Date(
-          start.getFullYear(),
-          start.getMonth(),
-          start.getDate(),
-          23,
-          59,
-          59
-        );
-    const state = row[columns.state];
-    const colorCls = stateColors[state] ?? "bg-gray-300";
-    const groupId =
-      columns.groupBy && row[columns.groupBy] ? row[columns.groupBy] : groupKey;
+  return data
+    .filter((row) => row && row[columns.time]) // <-- 이 한 줄 추가!
+    .map((row) => {
+      const start = new Date(row[columns.time]);
+      const next = data[data.indexOf(row) + 1];
+      // 마지막 아이템은 range.max까지 끝이 연장됩니다.
+      const end = next
+        ? new Date(next[columns.time])
+        : new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate(),
+            23,
+            59,
+            59
+          );
+      const state = row[columns.state];
+      const colorCls = stateColors[state] ?? "bg-gray-300";
+      const groupId =
+        columns.groupBy && row[columns.groupBy]
+          ? row[columns.groupBy]
+          : groupKey;
 
-    return {
-      id: `${groupKey}-${idx}`,
-      group: groupId,
-      content: cfg.type === "range" ? undefined : row[columns.comment],
-      start,
-      end: cfg.type === "range" ? end : undefined,
-      type: cfg.type,
-      className: colorCls,
-    };
-  });
+      return {
+        id: `${groupKey}-${new Date(row[columns.time]).toISOString()}`,
+        group: groupId,
+        content: cfg.type === "range" ? undefined : row[columns.comment],
+        start,
+        end: cfg.type === "range" ? end : undefined,
+        type: cfg.type,
+        className: colorCls,
+      };
+    });
 };
 
 /**
@@ -1581,6 +1947,38 @@ export default App;
 @import "./styles/timeline.css";
 
 
+/* 🔹 공통: 슬림 스크롤바 디자인 */
+.table-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  /* 🔸 기본(라이트모드) 스타일 */
+  .table-scroll::-webkit-scrollbar-track {
+    background-color: #e2e8f0; /* slate-200 */
+    border-radius: 10px;
+  }
+  .table-scroll::-webkit-scrollbar-thumb {
+    background-color: #94a3b8; /* slate-400 */
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* 🔸 다크모드 스타일 */
+  .dark .table-scroll::-webkit-scrollbar-track {
+    background-color: #1e293b; /* slate-800 */
+  }
+  .dark .table-scroll::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+    border: 1px solid #1e293b;
+  }
+  
+  /* 🔸 호버 시 더 진하게 */
+  .dark .table-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b; /* slate-500 */
+  }
+  
+
 ----- C:\Users\pjw75\Desktop\react-prc\src\main.jsx -----
 
 import React from "react";
@@ -1590,6 +1988,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TimelineProvider } from "./context/TimelineProvider";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { SelectionProvider } from "./context/SelectionContext";
 import "./index.css";
 
 // React Query의 전역 클라이언트(캐시 등)
@@ -1607,9 +2006,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <TimelineProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <SelectionProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </SelectionProvider>
       </TimelineProvider>
     </QueryClientProvider>
   </StrictMode>

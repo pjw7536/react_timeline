@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TimelineProvider } from "./context/TimelineProvider";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { SelectionProvider } from "./context/SelectionContext";
 import "./index.css";
 
 // React Query의 전역 클라이언트(캐시 등)
@@ -22,9 +23,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <TimelineProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <SelectionProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </SelectionProvider>
       </TimelineProvider>
     </QueryClientProvider>
   </StrictMode>

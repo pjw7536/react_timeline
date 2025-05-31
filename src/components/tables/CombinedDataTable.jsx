@@ -1,10 +1,33 @@
-import React from "react";
+import { useRef, useEffect } from "react";
+import { useSelection } from "../../context/SelectionContext";
 
 /**
  * 여러 데이터 타입(RUN/STEP/EVENT 등)을 시간순으로 통합해서 보여주는 테이블입니다.
  * - data: [{displayTimestamp, type, info1, info2, info3, ...}] 형태의 배열
  */
 const CombinedDataTable = ({ data }) => {
+  const { selectedRow, setSelectedRow } = useSelection();
+  const rowRefs = useRef({});
+
+  useEffect(() => {
+    if (selectedRow && rowRefs.current[selectedRow]) {
+      rowRefs.current[selectedRow].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else if (selectedRow) {
+      // 렌더 타이밍 문제로 100ms 후 재시도
+      setTimeout(() => {
+        if (rowRefs.current[selectedRow]) {
+          rowRefs.current[selectedRow].scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+    }
+  }, [selectedRow, data]);
+
   // 데이터 없으면 안내 메시지
   if (!data || data.length === 0) {
     return (
@@ -14,7 +37,7 @@ const CombinedDataTable = ({ data }) => {
     );
   }
 
-  // 테이블 컬럼 정의 (필요에 따라 수정 가능)
+  // 테이블 컬럼 정의
   const columns = [
     { header: "시간", accessor: "displayTimestamp" },
     { header: "타입", accessor: "type" },
@@ -27,37 +50,51 @@ const CombinedDataTable = ({ data }) => {
       <h3 className="text-lg font-semibold p-4 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white rounded-t-lg">
         통합 데이터 로그
       </h3>
-      <div className="overflow-y-auto max-h-96">
+      <div className="overflow-y-auto max-h-135 table-scroll">
         <table className="w-full text-sm text-center text-gray-800 dark:text-gray-200">
           <thead className="sticky top-0 bg-gray-50 text-gray-900 dark:bg-gray-600 dark:text-gray-100">
             <tr>
               {columns.map((col) => (
-                <th
-                  key={col.accessor}
-                  scope="col"
-                  className="px-6 py-3 whitespace-nowrap font-semibold"
-                >
+                <th key={col.accessor} className="px-6 py-3 font-semibold">
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr
-                key={index}
-                className="bg-white text-slate-800 border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white"
-              >
-                {columns.map((col) => (
-                  <td
-                    key={col.accessor}
-                    className="px-6 py-4 whitespace-nowrap"
-                  >
-                    {item[col.accessor] || "-"}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {data.map((item) => {
+              const rowId = item.id;
+              const isSelected =
+                String(rowId).trim() === String(selectedRow).trim();
+
+              console.log(
+                "rowId",
+                rowId,
+                "| selectedRow",
+                selectedRow,
+                "| match:",
+                isSelected
+              );
+
+              return (
+                <tr
+                  key={rowId}
+                  ref={(el) => (rowRefs.current[rowId] = el)}
+                  className={`transition-colors duration-300 ${
+                    isSelected
+                      ? "bg-yellow-100 dark:bg-yellow-800"
+                      : "bg-white dark:bg-gray-800"
+                  }`}
+                  onClick={() => setSelectedRow(rowId)}
+                >
+                  {columns.map((col) => (
+                    <td key={col.accessor} className="px-6 py-4">
+                      {item[col.accessor] || "-"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

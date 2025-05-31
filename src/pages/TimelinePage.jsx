@@ -13,8 +13,8 @@ import { ChartBarIcon } from "@heroicons/react/24/outline";
 import SDWTSelector from "../components/selectors/SDWTSelector";
 
 const DATA_TYPES = {
-  EQP: "EQP_STATUS",
-  TIP: "TIP_STATUS",
+  EQP: "EQP_LOG",
+  TIP: "TIP_LOG",
   RACB: "RACB_LOG",
   CTTTM: "CTTTM_LOG",
 };
@@ -27,6 +27,7 @@ const TimelinePage = () => {
     [DATA_TYPES.EQP]: true,
     [DATA_TYPES.TIP]: true,
     [DATA_TYPES.RACB]: true,
+    [DATA_TYPES.CTTTM]: true,
   });
 
   const { data: runData = [], isLoading: l1 } = useEqpStatusLog(eqpId);
@@ -39,6 +40,7 @@ const TimelinePage = () => {
     if (isLoading || !eqpId) return [];
 
     const transformedRun = runData.map((item) => ({
+      id: `${DATA_TYPES.EQP}-${new Date(item.timestamp).toISOString()}`,
       originalTimestamp: new Date(item.timestamp),
       displayTimestamp: new Date(item.timestamp).toLocaleString(),
       type: DATA_TYPES.EQP,
@@ -48,6 +50,7 @@ const TimelinePage = () => {
     }));
 
     const transformedStep = stepData.map((item) => ({
+      id: `${DATA_TYPES.TIP}-${new Date(item.start_time).toISOString()}`,
       originalTimestamp: new Date(item.start_time),
       displayTimestamp: new Date(item.start_time).toLocaleString(),
       type: DATA_TYPES.TIP,
@@ -57,6 +60,7 @@ const TimelinePage = () => {
     }));
 
     const transformedEvent = eventData.map((item) => ({
+      id: `${DATA_TYPES.RACB}-${new Date(item.occurred_at).toISOString()}`,
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.RACB,
@@ -66,9 +70,10 @@ const TimelinePage = () => {
     }));
 
     const transformedCTTTM = ctttmData.map((item) => ({
+      id: `${DATA_TYPES.CTTTM}-${new Date(item.occurred_at).toISOString()}`,
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
-      type: DATA_TYPES.CTTTM, // ✅ type 설정
+      type: DATA_TYPES.CTTTM,
       info1: item.event_type,
       info2: item.comment,
       info3: "",

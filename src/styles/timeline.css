@@ -50,7 +50,38 @@
   z-index: 10;
 }
 
+/* 이미 있는 .vis-item.selected 밑에 바로 이어서 넣어 주세요 */
+.vis-item.vis-range.selected {
+  outline: 3px dashed #fb923c !important;  /* amber-400 */
+  outline-offset: -1px;
+  filter: brightness(1.2);                 /* 살짝 강조 */
+}
+
+
 .vis-time-axis .vis-text,
 .vis-time-axis .vis-label {
   font-size: 13px !important;
 }
+
+/* 다크모드에서 타임라인 그룹 이름(라벨)을 흰색으로 */
+.dark .vis-time-axis .vis-text,
+.dark .vis-time-axis .vis-label {
+  color: #f1f5f9 !important;
+}
+
+.dark .vis-group .vis-label,
+.dark .vis-group .vis-inner {
+  color: #f1f5f9 !important;
+}
+
+/* 기본 */
+.vis-label.custom-group-label {
+  color: #334155; /* slate-800 */
+}
+
+/* 다크모드 */
+.dark .vis-label.custom-group-label {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+

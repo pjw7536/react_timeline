@@ -7,38 +7,46 @@ import { groupConfig } from "./timelineMeta";
  * overallMaxTime: 마지막 아이템 끝 범위 (없으면 range.max)
  */
 export const processData = (groupKey, data) => {
+  /**
+   * 아이템 id는 groupKey-유니크값(timestamp 등)으로 생성해야
+   * 테이블-타임라인 연동이 100% 일치합니다!
+   */
   const cfg = groupConfig[groupKey];
   const { columns, stateColors } = cfg;
 
-  return data.map((row, idx) => {
-    const start = new Date(row[columns.time]);
-    const next = data[idx + 1];
-    // 마지막 아이템은 range.max까지 끝이 연장됩니다.
-    const end = next
-      ? new Date(next[columns.time])
-      : new Date(
-          start.getFullYear(),
-          start.getMonth(),
-          start.getDate(),
-          23,
-          59,
-          59
-        );
-    const state = row[columns.state];
-    const colorCls = stateColors[state] ?? "bg-gray-300";
-    const groupId =
-      columns.groupBy && row[columns.groupBy] ? row[columns.groupBy] : groupKey;
+  return data
+    .filter((row) => row && row[columns.time]) // <-- 이 한 줄 추가!
+    .map((row) => {
+      const start = new Date(row[columns.time]);
+      const next = data[data.indexOf(row) + 1];
+      // 마지막 아이템은 range.max까지 끝이 연장됩니다.
+      const end = next
+        ? new Date(next[columns.time])
+        : new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate(),
+            23,
+            59,
+            59
+          );
+      const state = row[columns.state];
+      const colorCls = stateColors[state] ?? "bg-gray-300";
+      const groupId =
+        columns.groupBy && row[columns.groupBy]
+          ? row[columns.groupBy]
+          : groupKey;
 
-    return {
-      id: `${groupKey}-${idx}`,
-      group: groupId,
-      content: cfg.type === "range" ? undefined : row[columns.comment],
-      start,
-      end: cfg.type === "range" ? end : undefined,
-      type: cfg.type,
-      className: colorCls,
-    };
-  });
+      return {
+        id: `${groupKey}-${new Date(row[columns.time]).toISOString()}`,
+        group: groupId,
+        content: cfg.type === "range" ? undefined : row[columns.comment],
+        start,
+        end: cfg.type === "range" ? end : undefined,
+        type: cfg.type,
+        className: colorCls,
+      };
+    });
 };
 
 /**
