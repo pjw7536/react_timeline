@@ -688,17 +688,8 @@ const CombinedDataTable = ({ data }) => {
           <tbody>
             {data.map((item) => {
               const rowId = item.id;
-              const isSelected = String(rowId) === String(selectedRow);
-
-              console.log(
-                "rowId",
-                rowId,
-                "| selectedRow",
-                selectedRow,
-                "| match:",
-                isSelected
-              );
-
+              const isSelected =
+                String(rowId).trim() === String(selectedRow).trim();
               return (
                 <tr
                   key={rowId}
@@ -708,7 +699,7 @@ const CombinedDataTable = ({ data }) => {
                       ? "bg-yellow-100 dark:bg-yellow-800"
                       : "bg-white dark:bg-gray-800"
                   }`}
-                  onClick={() => setSelectedRow(rowId)}
+                  onClick={() => setSelectedRow(rowId, "table")}
                 >
                   {columns.map((col) => (
                     <td key={col.accessor} className="px-6 py-4">
@@ -756,9 +747,7 @@ import { Timeline, DataSet } from "vis-timeline/standalone";
 import { TimelineContext } from "../../../context/TimelineProvider";
 import { processData } from "../../../utils/timelineUtils";
 import { groupConfig } from "../../../utils/timelineMeta";
-import moment from "moment";
-import "moment/locale/ko";
-moment.locale("ko");
+
 /**
  * 실제 vis-timeline 인스턴스를 생성/업데이트/해제하는 역할을 하는 커스텀 훅입니다.
  * - 타임라인 인스턴스의 X축 동기화, 옵션 변화 반영 등을 관리합니다.
@@ -774,17 +763,16 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 
   // 1. 타임라인 인스턴스 생성 및 파괴
   useEffect(() => {
+    console.log("[TimelineRenderer] 최초 마운트", range.min, range.max);
     if (!containerRef.current) return;
-
-    // 타임라인 옵션 설정 (X축 min/max 포함)
+    // 최초 생성만! (range 등 옵션 반영)
     const initialMergedOptions = {
-      stack: false,
-      zoomMin: 1000 * 60 * 30,
-      zoomMax: 1000 * 60 * 60 * 24 * 30,
       ...groupOptions,
       min: range.min,
       max: range.max,
-      locale: "ko", // 브라우저가 지원해야 제대로 나옴
+      stack: false,
+      zoomMin: 1000 * 60 * 30,
+      zoomMax: 1000 * 60 * 60 * 24 * 30,
       format: {
         minorLabels: {
           millisecond: "SSS",
@@ -810,15 +798,14 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
         },
       },
     };
-
-    // 데이터 가공 및 타임라인 생성
     const items = new DataSet(processData(groupKey, data, range.max));
     tlRef.current = new Timeline(
       containerRef.current,
       items,
       initialMergedOptions
     );
-    tlRef.current.setWindow(range.min, range.max); // 최초 보이는 구간
+    // ⚠️ 최초만 setWindow (이후 effect에서 중복 금지!)
+    tlRef.current.setWindow(range.min, range.max);
 
     // 타임라인 pool에 등록 (동기화 위해)
     register(tlRef.current);
@@ -842,10 +829,16 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
       tlRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerRef, groupKey, poolRef, register, unregister]);
+  }, [containerRef, groupKey]); // ⚠️ range, groupOptions X
 
   // 2. 데이터가 바뀔 때마다 타임라인 데이터만 갱신
   useEffect(() => {
+    console.log(
+      "[TimelineRenderer] 데이터/옵션 변경",
+      data,
+      groupKey,
+      range.max
+    );
     if (tlRef.current) {
       tlRef.current.setItems(
         new DataSet(processData(groupKey, data, range.max))
@@ -855,19 +848,19 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 
   // 3. range(구간), 옵션 등이 바뀔 때마다 타임라인 옵션 및 윈도우 업데이트
   useEffect(() => {
+    console.log("[TimelineRenderer] 옵션(min/max) 변경", range.min, range.max);
     if (tlRef.current) {
-      const updatedMergedOptions = {
-        stack: false,
-        zoomMin: 1000 * 60 * 30,
-        zoomMax: 1000 * 60 * 60 * 24 * 30,
+      tlRef.current.setOptions({
         ...groupOptions,
         min: range.min,
         max: range.max,
-      };
-      tlRef.current.setOptions(updatedMergedOptions);
-      tlRef.current.setWindow(range.min, range.max);
+        stack: false,
+        zoomMin: 1000 * 60 * 30,
+        zoomMax: 1000 * 60 * 60 * 24 * 30,
+      });
+      // setWindow 호출하지 않음!
     }
-  }, [range, groupOptions]);
+  }, [range.min, range.max, groupOptions]);
 
   return tlRef;
 };
@@ -881,6 +874,7 @@ import { Timeline, DataSet } from "vis-timeline/standalone";
 import { processData } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
+import { makeItemId } from "../../utils/timelineUtils";
 
 const NonStackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
@@ -933,12 +927,21 @@ const NonStackedTimeline = ({ dataMap, range }) => {
     timeline.on("select", (props) => {
       if (props.items?.length) {
         const selectedItem = timeline.itemsData.get(props.items[0]);
-        const matchedId = selectedItem?.id;
-        if (matchedId) {
-          setSelectedRow(matchedId); // 정확한 ID 저장
+        // For NonStackedTimeline (range items), always construct the ID
+        // from its group and start time to ensure consistency with CombinedDataTable.
+        if (selectedItem && selectedItem.start && selectedItem.group) {
+          const matchedId = makeItemId(selectedItem.group, selectedItem.start);
+          setSelectedRow(matchedId);
+        } else {
+          // If essential info (start or group) is missing, or item not found,
+          // treat as a deselection or log an error if unexpected.
+          // For now, if an item was supposedly selected but we can't form an ID,
+          // we'll clear the selection to avoid inconsistent states.
+          if (selectedRow !== null) setSelectedRow(null);
         }
       } else {
-        setSelectedRow(null);
+        // No items selected, clear the selection.
+        //if (selectedRow !== null) setSelectedRow(null);
       }
     });
 
@@ -951,22 +954,19 @@ const NonStackedTimeline = ({ dataMap, range }) => {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
-    // 1) pool 에서 내 타임라인을 찾는다
     const tl = poolRef.current.find(
       (t) => t.dom?.container === containerRef.current
     );
     if (!tl) return;
-
-    // 2) 현재 선택된 ID가 이 타임라인 안에 있는지 확인
     const hasItem =
       tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
 
+    // 여기에선 setSelectedRow(null) 하지 말 것!
     if (selectedRow && hasItem) {
       tl.setSelection([selectedRow]);
-      //tl.focus(selectedRow, { animation: { duration: 300 }, zoom: false });
     } else {
-      tl.setSelection([]); // 없으면 선택 해제
+      tl.setSelection([]);
+      // 이곳에 setSelectedRow(null) 호출 금지!!
     }
   }, [selectedRow, poolRef]);
 
@@ -991,13 +991,22 @@ import { Timeline, DataSet } from "vis-timeline/standalone";
 import { processData } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
+import { makeItemId } from "../../utils/timelineUtils";
 
+/**
+ * 타임라인의 zoom/pan(확대/이동) 상태가 사용자가 조작해도 유지됩니다.
+ * setWindow는 최초 마운트시에만 1회만 호출!
+ */
 const StackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
   const { register, unregister, poolRef } = useContext(TimelineContext);
-  const { selectedRow, setSelectedRow } = useSelection();
+  const {
+    selectedRow,
+    setSelectedRow,
+    selectionSource = "timeline",
+  } = useSelection();
 
-  // 그룹 정의 (고정 너비 설정)
+  // 그룹 정의 (고정 너비/높이)
   const groups = new DataSet([
     {
       id: "CTTTM_LOG",
@@ -1014,30 +1023,27 @@ const StackedTimeline = ({ dataMap, range }) => {
   ]);
 
   useEffect(() => {
-    // items 구성 시 배열로 변환하여 flatMap 사용
+    // 1️⃣ 타임라인 인스턴스 생성 (마운트) — 최초 1회만 setWindow!
     const items = new DataSet(
       groups
         .get()
         .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
     );
-
     const timeline = new Timeline(containerRef.current, items, groups, {
       height: "550px",
       stack: true,
       min: range.min,
       max: range.max,
-      locale: "ko",
       verticalScroll: false,
       margin: { item: 0, axis: 0 },
-
       groupHeightMode: "fixed",
-
       groupOrder: (a, b) =>
         groups.get().findIndex((g) => g.id === a.id) -
         groups.get().findIndex((g) => g.id === b.id),
     });
 
-    timeline.setWindow(range.min, range.max);
+    timeline.setWindow(range.min, range.max); // ✅ 최초 1회만
+
     register(timeline);
 
     const sync = ({ start, end }) => {
@@ -1049,59 +1055,77 @@ const StackedTimeline = ({ dataMap, range }) => {
     };
     timeline.on("rangechange", sync);
 
-    // ✅ 선택 이벤트 연결
     timeline.on("select", (props) => {
-      // 방어코드 추가
       const selectedId = props.items?.[0];
       if (selectedId && typeof selectedId === "string") {
-        setSelectedRow(selectedId);
+        setSelectedRow(selectedId, "timeline");
       } else {
-        setSelectedRow(null);
+        setSelectedRow(null, "timeline");
       }
     });
 
+    // 언마운트 시 해제
     return () => {
       unregister(timeline);
       timeline.off("rangechange", sync);
       timeline.destroy();
     };
-  }, [dataMap, range]);
+    // eslint-disable-next-line
+  }, [
+    dataMap,
+    range.min,
+    range.max,
+    poolRef,
+    register,
+    unregister,
+    setSelectedRow,
+  ]);
 
-  /* 🔄 2-way sync: 컨텍스트가 변하면 타임라인도 선택·포커스 */
+  // 2️⃣ 데이터가 바뀔 때 타임라인 항목만 갱신 (window 변경 X)
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    // 1) pool 에서 내 타임라인을 찾는다
     const tl = poolRef.current.find(
       (t) => t.dom?.container === containerRef.current
     );
     if (!tl) return;
 
-    // 2) 현재 선택된 ID가 이 타임라인 안에 있는지 확인
-    // 2-1) selectedRow가 없거나, string 타입이 아닌 경우 리턴
-    if (!selectedRow || typeof selectedRow !== "string") {
-      tl.setSelection([]);
-      return;
-    }
+    // 데이터셋 갱신만 (window/zoom/pan은 그대로)
+    tl.setItems(
+      new DataSet(
+        groups
+          .get()
+          .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
+      )
+    );
+  }, [dataMap, range.max, poolRef, groups]);
 
-    // 2-2) itemsData에 실제로 존재하는 아이템인지 체크
-    const hasItem =
-      tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
+  /**
+   * selectedRow, selectionSource가 바뀔 때마다 타임라인에 반영
+   * 테이블(row) 클릭이면 window도 ±24시간으로 이동!
+   * 타임라인 직접 클릭이면 window/focus는 안 바꿈.
+   */
+  useEffect(() => {
+    if (!containerRef.current || !selectedRow) return;
 
-    if (hasItem) {
+    // 타임라인 인스턴스
+    const tl = poolRef.current.find(
+      (t) => t.dom?.container === containerRef.current
+    );
+    if (!tl) return;
+
+    // (1) 해당 아이템이 존재할 때만 focus
+    const item = tl.itemsData.get(selectedRow);
+    if (item) {
+      // focus 호출 (focus는 setWindow보다 깔끔)
       tl.setSelection([selectedRow]);
-      try {
-        tl.focus(selectedRow, { animation: { duration: 300 } });
-      } catch (e) {
-        // 에러 발생 시(예: 아이템이 사라졌거나 애니메이션 불가 등) 안전하게 무시
-        console.warn("Timeline focus error:", e);
+      if (selectionSource === "table") {
+        setTimeout(() => {
+          try {
+            tl.focus(selectedRow, { animation: { duration: 200 } });
+          } catch {}
+        }, 0); // ← 0~100ms 짧은 딜레이를 넣으면, 아이템 렌더 동기화에 도움됨
       }
-    } else {
-      tl.setSelection([]);
-      // 🚨🚨🚨 없는 selectedRow는 자동 초기화 (여기선 내부적으로만)
-      if (selectedRow) setSelectedRow(null);
     }
-  }, [selectedRow, poolRef, setSelectedRow]);
+  }, [selectedRow, selectionSource, poolRef, dataMap, range.max]);
 
   return (
     <div className="timeline-container">
@@ -1112,8 +1136,8 @@ const StackedTimeline = ({ dataMap, range }) => {
         ref={containerRef}
         className="timeline"
         style={{
-          height: "550px", // ✅ 고정 높이
-          overflow: "hidden", // ✅ 스크롤 방지
+          height: "550px",
+          overflow: "hidden",
         }}
       />
     </div>
@@ -1125,7 +1149,7 @@ export default StackedTimeline;
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\TimelineBoard.jsx -----
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useEqpStatusLog } from "../../hooks/useEqpStatusLog";
 import { useTipLog } from "../../hooks/useTIPLog";
 import { useRacbLog } from "../../hooks/useRacbLog";
@@ -1144,8 +1168,18 @@ const TimelineBoard = ({ eqpId }) => {
   if (!eqpId) return null;
   if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
 
-  const range = calcRange(eqp_log, tip_log, racb_log, ctttm_log);
-  const fullRange = addBuffer(range.min.getTime(), range.max.getTime());
+  const baseRange = useMemo(
+    () => calcRange(eqp_log, tip_log, racb_log, ctttm_log),
+    [eqp_log, tip_log, racb_log, ctttm_log]
+  );
+
+  const fullRange = useMemo(
+    () =>
+      baseRange.min && baseRange.max
+        ? addBuffer(baseRange.min.getTime(), baseRange.max.getTime())
+        : { min: new Date(), max: new Date() },
+    [baseRange.min, baseRange.max]
+  );
 
   return (
     <div className="w-full space-y-4">
@@ -1190,6 +1224,7 @@ const UnifiedTimeline = ({ dataMap, range }) => {
   };
 
   useEffect(() => {
+    // 그룹 정의
     const groups = new DataSet(
       groupOrderList.map((key) => ({
         id: key,
@@ -1197,9 +1232,13 @@ const UnifiedTimeline = ({ dataMap, range }) => {
       }))
     );
 
+    // 데이터 가공 (id 생성시 makeItemId 활용 가능)
     const items = new DataSet(
-      groupOrderList.flatMap((key) =>
-        processData(key, dataMap[key] || [], range.max)
+      groupOrderList.flatMap(
+        (key) =>
+          (processData(key, dataMap[key] || [], range.max) || []).filter(
+            (item) => !!item && !!item.id
+          ) // id가 확실히 있을 때만
       )
     );
 
@@ -1208,15 +1247,12 @@ const UnifiedTimeline = ({ dataMap, range }) => {
       zoomMax: 1000 * 60 * 60 * 24 * 30,
       min: range.min,
       max: range.max,
-      stack: true, // 기본 stack은 true지만,
+      stack: true,
       groupStack: (groupId) => groupStackMap[groupId] ?? false,
       groupOrder: (a, b) =>
         groupOrderList.indexOf(a.id) - groupOrderList.indexOf(b.id),
       verticalScroll: false,
-      margin: {
-        item: 0,
-        axis: 0,
-      },
+      margin: { item: 0, axis: 0 },
       format: {
         minorLabels: {
           millisecond: "SSS",
@@ -1243,12 +1279,18 @@ const UnifiedTimeline = ({ dataMap, range }) => {
       },
     });
 
-    // 타임라인 select 이벤트 처리
+    // ✅ select 이벤트: 오직 items가 있을 때만 setSelectedRow
     timeline.on("select", function (props) {
-      if (props.items.length > 0) {
-        const selectedId = props.items[0]; // ex: "EQP_LOG-3"
-        setSelectedRow(selectedId); // 아이디 또는 timestamp 기반으로 설정
+      if (props.items && props.items.length > 0) {
+        const selectedItem = timeline.itemsData.get(props.items[0]);
+        let matchedId = selectedItem?.id;
+        // 혹시라도 id가 undefined일 때 group+start로 생성
+        if (!matchedId && selectedItem?.start && selectedItem?.group) {
+          matchedId = makeItemId(selectedItem.group, selectedItem.start);
+        }
+        if (matchedId) setSelectedRow(matchedId);
       }
+      // 선택 해제(setSelectedRow(null))는 아예 하지 않음!
     });
 
     timeline.setWindow(range.min, range.max);
@@ -1264,28 +1306,34 @@ const UnifiedTimeline = ({ dataMap, range }) => {
 
     timeline.on("rangechange", handleRangeChange);
 
-    /* 🔄 2-way sync: 컨텍스트가 변하면 타임라인도 선택·포커스 */
-    useEffect(() => {
-      if (!containerRef.current) return;
-      const tl = poolRef.current.find(
-        (t) => t.dom?.container === containerRef.current
-      );
-      if (!tl) return;
-
-      if (selectedRow) {
-        tl.setSelection([selectedRow]);
-        tl.focus(selectedRow, { animation: { duration: 300 } });
-      } else {
-        tl.setSelection([]);
-      }
-    }, [selectedRow, poolRef]);
-
+    // 클린업
     return () => {
       timeline.off("rangechange", handleRangeChange);
       unregister(timeline);
       timeline.destroy();
     };
   }, [dataMap, range, poolRef, register, unregister, setSelectedRow]);
+
+  // selection 유지 (selectedRow가 null/undefined/빈값이면 selection을 유지)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const tl = poolRef.current.find(
+      (t) => t.dom?.container === containerRef.current
+    );
+    if (!tl) return;
+
+    if (
+      selectedRow &&
+      typeof selectedRow === "string" &&
+      tl.itemsData?.get instanceof Function &&
+      tl.itemsData.get(selectedRow)
+    ) {
+      tl.setSelection([selectedRow]);
+      // focus도 원한다면 아래 코드 추가 (선택)
+      // try { tl.focus(selectedRow, { animation: { duration: 300 } }); } catch(e){}
+    }
+    // else: 해제는 아예 하지 않음
+  }, [selectedRow, poolRef]);
 
   return (
     <div className="timeline-container unified-timeline">
@@ -1299,23 +1347,28 @@ export default UnifiedTimeline;
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\context\SelectionContext.jsx -----
 
-import React, { createContext, useState, useContext } from "react";
+// src/context/SelectionContext.jsx
 
-// "선택된 테이블 행" 상태를 전역에서 공유할 수 있게 해주는 Context입니다.
+import React, { createContext, useState, useContext } from "react";
 const SelectionContext = createContext();
 
-// 이 훅을 사용하면 하위 컴포넌트에서 쉽게 선택 상태에 접근/설정할 수 있습니다.
 export const useSelection = () => useContext(SelectionContext);
 
-/**
- * SelectionProvider로 감싸면, 하위 컴포넌트에서
- * { selectedRow, setSelectedRow }를 사용할 수 있습니다.
- */
 export const SelectionProvider = ({ children }) => {
   const [selectedRow, setSelectedRow] = useState(null);
+  // ✅ 추가: 선택 출처 관리
+  const [selectionSource, setSelectionSource] = useState(null); // "table" or "timeline"
+
+  // 확장된 setter
+  const selectRow = (rowId, source = null) => {
+    setSelectedRow(rowId);
+    setSelectionSource(source);
+  };
 
   return (
-    <SelectionContext.Provider value={{ selectedRow, setSelectedRow }}>
+    <SelectionContext.Provider
+      value={{ selectedRow, setSelectedRow: selectRow, selectionSource }}
+    >
       {children}
     </SelectionContext.Provider>
   );
@@ -1487,6 +1540,7 @@ import { useRacbLog } from "../hooks/useRacbLog";
 import { useCtttmLog } from "../hooks/useCTTTMLog";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 import SDWTSelector from "../components/selectors/SDWTSelector";
+import { makeItemId } from "../utils/timelineUtils"; // 파일 위치에 따라 경로 조정
 
 const DATA_TYPES = {
   EQP: "EQP_LOG",
@@ -1516,7 +1570,7 @@ const TimelinePage = () => {
     if (isLoading || !eqpId) return [];
 
     const transformedRun = runData.map((item) => ({
-      id: `${DATA_TYPES.EQP}-${new Date(item.timestamp).toISOString()}`,
+      id: makeItemId(DATA_TYPES.EQP, item.timestamp),
       originalTimestamp: new Date(item.timestamp),
       displayTimestamp: new Date(item.timestamp).toLocaleString(),
       type: DATA_TYPES.EQP,
@@ -1526,7 +1580,7 @@ const TimelinePage = () => {
     }));
 
     const transformedStep = stepData.map((item) => ({
-      id: `${DATA_TYPES.TIP}-${new Date(item.start_time).toISOString()}`,
+      id: makeItemId(DATA_TYPES.TIP, item.start_time),
       originalTimestamp: new Date(item.start_time),
       displayTimestamp: new Date(item.start_time).toLocaleString(),
       type: DATA_TYPES.TIP,
@@ -1536,7 +1590,7 @@ const TimelinePage = () => {
     }));
 
     const transformedEvent = eventData.map((item) => ({
-      id: `${DATA_TYPES.RACB}-${new Date(item.occurred_at).toISOString()}`,
+      id: makeItemId(DATA_TYPES.RACB, item.occurred_at),
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.RACB,
@@ -1546,7 +1600,7 @@ const TimelinePage = () => {
     }));
 
     const transformedCTTTM = ctttmData.map((item) => ({
-      id: `${DATA_TYPES.CTTTM}-${new Date(item.occurred_at).toISOString()}`,
+      id: makeItemId(DATA_TYPES.CTTTM, item.occurred_at),
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.CTTTM,
@@ -1814,21 +1868,36 @@ export const groupConfig = {
 import { groupConfig } from "./timelineMeta";
 
 /**
- * 원시 데이터를 vis-timeline이 이해할 수 있는 형태로 가공합니다.
- * groupKey: 어떤 타입인지 (예: EQP_STATUS)
- * data: 원본 데이터 배열
- * overallMaxTime: 마지막 아이템 끝 범위 (없으면 range.max)
+ * group: "RACB_LOG", time: Date 또는 String (ISO)
+ * 항상 3자리 ms 포맷으로 id 생성 (예: RACB_LOG-2025-05-26T15:01:01.389Z)
+ */
+export const makeItemId = (group, time) => {
+  // time은 Date 또는 ISO String
+  let d = time instanceof Date ? time : new Date(time);
+
+  // ISO 문자열로 변환 (항상 3자리 ms로 강제)
+  let iso = d.toISOString();
+  // 1) 소수점 없으면 붙이기 (.000)
+  if (!iso.includes(".")) {
+    iso = iso.replace("Z", ".000Z");
+  }
+  // 2) 소수점 뒤가 3자리보다 짧으면 패딩, 길면 자르기
+  iso = iso.replace(
+    /\.(\d{1,6})Z$/,
+    (_, ms) => `.${ms.padEnd(3, "0").slice(0, 3)}Z`
+  );
+  return `${group}-${iso}`;
+};
+
+/**
+ * vis-timeline 데이터 변환 함수 (모든 group에서 makeItemId만 사용!)
  */
 export const processData = (groupKey, data) => {
-  /**
-   * 아이템 id는 groupKey-유니크값(timestamp 등)으로 생성해야
-   * 테이블-타임라인 연동이 100% 일치합니다!
-   */
   const cfg = groupConfig[groupKey];
   const { columns, stateColors } = cfg;
 
   return data
-    .filter((row) => row && row[columns.time]) // <-- 이 한 줄 추가!
+    .filter((row) => row && row[columns.time])
     .map((row) => {
       const start = new Date(row[columns.time]);
       const next = data[data.indexOf(row) + 1];
@@ -1850,12 +1919,14 @@ export const processData = (groupKey, data) => {
           ? row[columns.groupBy]
           : groupKey;
 
+      // point 타입일 때 end=start로
+      const isPoint = cfg.type === "point";
       return {
-        id: `${groupKey}-${new Date(row[columns.time]).toISOString()}`,
+        id: makeItemId(groupKey, row[columns.time]),
         group: groupId,
         content: cfg.type === "range" ? undefined : row[columns.comment],
         start,
-        end: cfg.type === "range" ? end : undefined,
+        end: isPoint ? start : end, // <-- 여기! point도 end=start!
         type: cfg.type,
         className: colorCls,
       };

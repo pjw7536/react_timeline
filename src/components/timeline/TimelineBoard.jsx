@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useEqpStatusLog } from "../../hooks/useEqpStatusLog";
 import { useTipLog } from "../../hooks/useTIPLog";
 import { useRacbLog } from "../../hooks/useRacbLog";
@@ -17,8 +17,18 @@ const TimelineBoard = ({ eqpId }) => {
   if (!eqpId) return null;
   if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
 
-  const range = calcRange(eqp_log, tip_log, racb_log, ctttm_log);
-  const fullRange = addBuffer(range.min.getTime(), range.max.getTime());
+  const baseRange = useMemo(
+    () => calcRange(eqp_log, tip_log, racb_log, ctttm_log),
+    [eqp_log, tip_log, racb_log, ctttm_log]
+  );
+
+  const fullRange = useMemo(
+    () =>
+      baseRange.min && baseRange.max
+        ? addBuffer(baseRange.min.getTime(), baseRange.max.getTime())
+        : { min: new Date(), max: new Date() },
+    [baseRange.min, baseRange.max]
+  );
 
   return (
     <div className="w-full space-y-4">

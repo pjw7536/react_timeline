@@ -4,6 +4,7 @@ import { Timeline, DataSet } from "vis-timeline/standalone";
 import { processData } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
+import { makeItemId } from "../../utils/timelineUtils";
 
 const NonStackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
@@ -56,20 +57,21 @@ const NonStackedTimeline = ({ dataMap, range }) => {
     timeline.on("select", (props) => {
       if (props.items?.length) {
         const selectedItem = timeline.itemsData.get(props.items[0]);
-        // vis-timeline의 id가 undefined일 가능성 방어 (range 타입 등)
-        let matchedId = selectedItem?.id;
-        // id가 없으면 group과 start로 직접 생성
-        if (!matchedId && selectedItem?.start && selectedItem?.group) {
-          matchedId = `${selectedItem.group}-${new Date(
-            selectedItem.start
-          ).toISOString()}`;
-        }
-        if (matchedId) {
+        // For NonStackedTimeline (range items), always construct the ID
+        // from its group and start time to ensure consistency with CombinedDataTable.
+        if (selectedItem && selectedItem.start && selectedItem.group) {
+          const matchedId = makeItemId(selectedItem.group, selectedItem.start);
           setSelectedRow(matchedId);
+        } else {
+          // If essential info (start or group) is missing, or item not found,
+          // treat as a deselection or log an error if unexpected.
+          // For now, if an item was supposedly selected but we can't form an ID,
+          // we'll clear the selection to avoid inconsistent states.
+          if (selectedRow !== null) setSelectedRow(null);
         }
       } else {
-        // 진짜 해제가 필요한 경우에만!
-        if (selectedRow !== null) setSelectedRow(null);
+        // No items selected, clear the selection.
+        //if (selectedRow !== null) setSelectedRow(null);
       }
     });
 
@@ -82,22 +84,19 @@ const NonStackedTimeline = ({ dataMap, range }) => {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     const tl = poolRef.current.find(
       (t) => t.dom?.container === containerRef.current
     );
     if (!tl) return;
-
     const hasItem =
       tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
 
-    // 로그 찍기!
-    console.log("selectedRow:", selectedRow, "hasItem:", !!hasItem);
-
+    // 여기에선 setSelectedRow(null) 하지 말 것!
     if (selectedRow && hasItem) {
       tl.setSelection([selectedRow]);
     } else {
       tl.setSelection([]);
+      // 이곳에 setSelectedRow(null) 호출 금지!!
     }
   }, [selectedRow, poolRef]);
 

@@ -1,20 +1,25 @@
-import React, { createContext, useState, useContext } from "react";
+// src/context/SelectionContext.jsx
 
-// "선택된 테이블 행" 상태를 전역에서 공유할 수 있게 해주는 Context입니다.
+import React, { createContext, useState, useContext } from "react";
 const SelectionContext = createContext();
 
-// 이 훅을 사용하면 하위 컴포넌트에서 쉽게 선택 상태에 접근/설정할 수 있습니다.
 export const useSelection = () => useContext(SelectionContext);
 
-/**
- * SelectionProvider로 감싸면, 하위 컴포넌트에서
- * { selectedRow, setSelectedRow }를 사용할 수 있습니다.
- */
 export const SelectionProvider = ({ children }) => {
   const [selectedRow, setSelectedRow] = useState(null);
+  // ✅ 추가: 선택 출처 관리
+  const [selectionSource, setSelectionSource] = useState(null); // "table" or "timeline"
+
+  // 확장된 setter
+  const selectRow = (rowId, source = null) => {
+    setSelectedRow(rowId);
+    setSelectionSource(source);
+  };
 
   return (
-    <SelectionContext.Provider value={{ selectedRow, setSelectedRow }}>
+    <SelectionContext.Provider
+      value={{ selectedRow, setSelectedRow: selectRow, selectionSource }}
+    >
       {children}
     </SelectionContext.Provider>
   );

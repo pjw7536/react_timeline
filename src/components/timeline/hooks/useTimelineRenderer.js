@@ -3,9 +3,7 @@ import { Timeline, DataSet } from "vis-timeline/standalone";
 import { TimelineContext } from "../../../context/TimelineProvider";
 import { processData } from "../../../utils/timelineUtils";
 import { groupConfig } from "../../../utils/timelineMeta";
-import moment from "moment";
-import "moment/locale/ko";
-moment.locale("ko");
+
 /**
  * 실제 vis-timeline 인스턴스를 생성/업데이트/해제하는 역할을 하는 커스텀 훅입니다.
  * - 타임라인 인스턴스의 X축 동기화, 옵션 변화 반영 등을 관리합니다.
@@ -21,17 +19,16 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 
   // 1. 타임라인 인스턴스 생성 및 파괴
   useEffect(() => {
+    console.log("[TimelineRenderer] 최초 마운트", range.min, range.max);
     if (!containerRef.current) return;
-
-    // 타임라인 옵션 설정 (X축 min/max 포함)
+    // 최초 생성만! (range 등 옵션 반영)
     const initialMergedOptions = {
-      stack: false,
-      zoomMin: 1000 * 60 * 30,
-      zoomMax: 1000 * 60 * 60 * 24 * 30,
       ...groupOptions,
       min: range.min,
       max: range.max,
-      locale: "ko", // 브라우저가 지원해야 제대로 나옴
+      stack: false,
+      zoomMin: 1000 * 60 * 30,
+      zoomMax: 1000 * 60 * 60 * 24 * 30,
       format: {
         minorLabels: {
           millisecond: "SSS",
@@ -57,15 +54,14 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
         },
       },
     };
-
-    // 데이터 가공 및 타임라인 생성
     const items = new DataSet(processData(groupKey, data, range.max));
     tlRef.current = new Timeline(
       containerRef.current,
       items,
       initialMergedOptions
     );
-    tlRef.current.setWindow(range.min, range.max); // 최초 보이는 구간
+    // ⚠️ 최초만 setWindow (이후 effect에서 중복 금지!)
+    tlRef.current.setWindow(range.min, range.max);
 
     // 타임라인 pool에 등록 (동기화 위해)
     register(tlRef.current);
@@ -89,10 +85,16 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
       tlRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerRef, groupKey, poolRef, register, unregister]);
+  }, [containerRef, groupKey]); // ⚠️ range, groupOptions X
 
   // 2. 데이터가 바뀔 때마다 타임라인 데이터만 갱신
   useEffect(() => {
+    console.log(
+      "[TimelineRenderer] 데이터/옵션 변경",
+      data,
+      groupKey,
+      range.max
+    );
     if (tlRef.current) {
       tlRef.current.setItems(
         new DataSet(processData(groupKey, data, range.max))
@@ -102,19 +104,19 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 
   // 3. range(구간), 옵션 등이 바뀔 때마다 타임라인 옵션 및 윈도우 업데이트
   useEffect(() => {
+    console.log("[TimelineRenderer] 옵션(min/max) 변경", range.min, range.max);
     if (tlRef.current) {
-      const updatedMergedOptions = {
-        stack: false,
-        zoomMin: 1000 * 60 * 30,
-        zoomMax: 1000 * 60 * 60 * 24 * 30,
+      tlRef.current.setOptions({
         ...groupOptions,
         min: range.min,
         max: range.max,
-      };
-      tlRef.current.setOptions(updatedMergedOptions);
-      tlRef.current.setWindow(range.min, range.max);
+        stack: false,
+        zoomMin: 1000 * 60 * 30,
+        zoomMax: 1000 * 60 * 60 * 24 * 30,
+      });
+      // setWindow 호출하지 않음!
     }
-  }, [range, groupOptions]);
+  }, [range.min, range.max, groupOptions]);
 
   return tlRef;
 };

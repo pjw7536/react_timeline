@@ -66,16 +66,6 @@ const CombinedDataTable = ({ data }) => {
               const rowId = item.id;
               const isSelected =
                 String(rowId).trim() === String(selectedRow).trim();
-
-              console.log(
-                "rowId",
-                rowId,
-                "| selectedRow",
-                selectedRow,
-                "| match:",
-                isSelected
-              );
-
               return (
                 <tr
                   key={rowId}
@@ -85,7 +75,7 @@ const CombinedDataTable = ({ data }) => {
                       ? "bg-yellow-100 dark:bg-yellow-800"
                       : "bg-white dark:bg-gray-800"
                   }`}
-                  onClick={() => setSelectedRow(rowId)}
+                  onClick={() => setSelectedRow(rowId, "table")}
                 >
                   {columns.map((col) => (
                     <td key={col.accessor} className="px-6 py-4">

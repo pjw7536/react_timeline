@@ -1,21 +1,36 @@
 import { groupConfig } from "./timelineMeta";
 
 /**
- * 원시 데이터를 vis-timeline이 이해할 수 있는 형태로 가공합니다.
- * groupKey: 어떤 타입인지 (예: EQP_STATUS)
- * data: 원본 데이터 배열
- * overallMaxTime: 마지막 아이템 끝 범위 (없으면 range.max)
+ * group: "RACB_LOG", time: Date 또는 String (ISO)
+ * 항상 3자리 ms 포맷으로 id 생성 (예: RACB_LOG-2025-05-26T15:01:01.389Z)
+ */
+export const makeItemId = (group, time) => {
+  // time은 Date 또는 ISO String
+  let d = time instanceof Date ? time : new Date(time);
+
+  // ISO 문자열로 변환 (항상 3자리 ms로 강제)
+  let iso = d.toISOString();
+  // 1) 소수점 없으면 붙이기 (.000)
+  if (!iso.includes(".")) {
+    iso = iso.replace("Z", ".000Z");
+  }
+  // 2) 소수점 뒤가 3자리보다 짧으면 패딩, 길면 자르기
+  iso = iso.replace(
+    /\.(\d{1,6})Z$/,
+    (_, ms) => `.${ms.padEnd(3, "0").slice(0, 3)}Z`
+  );
+  return `${group}-${iso}`;
+};
+
+/**
+ * vis-timeline 데이터 변환 함수 (모든 group에서 makeItemId만 사용!)
  */
 export const processData = (groupKey, data) => {
-  /**
-   * 아이템 id는 groupKey-유니크값(timestamp 등)으로 생성해야
-   * 테이블-타임라인 연동이 100% 일치합니다!
-   */
   const cfg = groupConfig[groupKey];
   const { columns, stateColors } = cfg;
 
   return data
-    .filter((row) => row && row[columns.time]) // <-- 이 한 줄 추가!
+    .filter((row) => row && row[columns.time])
     .map((row) => {
       const start = new Date(row[columns.time]);
       const next = data[data.indexOf(row) + 1];
@@ -37,12 +52,14 @@ export const processData = (groupKey, data) => {
           ? row[columns.groupBy]
           : groupKey;
 
+      // point 타입일 때 end=start로
+      const isPoint = cfg.type === "point";
       return {
-        id: `${groupKey}-${new Date(row[columns.time]).toISOString()}`,
+        id: makeItemId(groupKey, row[columns.time]),
         group: groupId,
         content: cfg.type === "range" ? undefined : row[columns.comment],
         start,
-        end: cfg.type === "range" ? end : undefined,
+        end: isPoint ? start : end, // <-- 여기! point도 end=start!
         type: cfg.type,
         className: colorCls,
       };

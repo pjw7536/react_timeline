@@ -11,6 +11,7 @@ import { useRacbLog } from "../hooks/useRacbLog";
 import { useCtttmLog } from "../hooks/useCTTTMLog";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 import SDWTSelector from "../components/selectors/SDWTSelector";
+import { makeItemId } from "../utils/timelineUtils"; // 파일 위치에 따라 경로 조정
 
 const DATA_TYPES = {
   EQP: "EQP_LOG",
@@ -40,7 +41,7 @@ const TimelinePage = () => {
     if (isLoading || !eqpId) return [];
 
     const transformedRun = runData.map((item) => ({
-      id: `${DATA_TYPES.EQP}-${new Date(item.timestamp).toISOString()}`,
+      id: makeItemId(DATA_TYPES.EQP, item.timestamp),
       originalTimestamp: new Date(item.timestamp),
       displayTimestamp: new Date(item.timestamp).toLocaleString(),
       type: DATA_TYPES.EQP,
@@ -50,7 +51,7 @@ const TimelinePage = () => {
     }));
 
     const transformedStep = stepData.map((item) => ({
-      id: `${DATA_TYPES.TIP}-${new Date(item.start_time).toISOString()}`,
+      id: makeItemId(DATA_TYPES.TIP, item.start_time),
       originalTimestamp: new Date(item.start_time),
       displayTimestamp: new Date(item.start_time).toLocaleString(),
       type: DATA_TYPES.TIP,
@@ -60,7 +61,7 @@ const TimelinePage = () => {
     }));
 
     const transformedEvent = eventData.map((item) => ({
-      id: `${DATA_TYPES.RACB}-${new Date(item.occurred_at).toISOString()}`,
+      id: makeItemId(DATA_TYPES.RACB, item.occurred_at),
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.RACB,
@@ -70,7 +71,7 @@ const TimelinePage = () => {
     }));
 
     const transformedCTTTM = ctttmData.map((item) => ({
-      id: `${DATA_TYPES.CTTTM}-${new Date(item.occurred_at).toISOString()}`,
+      id: makeItemId(DATA_TYPES.CTTTM, item.occurred_at),
       originalTimestamp: new Date(item.occurred_at),
       displayTimestamp: new Date(item.occurred_at).toLocaleString(),
       type: DATA_TYPES.CTTTM,

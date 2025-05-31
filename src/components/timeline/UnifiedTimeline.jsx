@@ -5,14 +5,6 @@ import { processData } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
 
-// (필요하다면 아래 유틸을 별도 파일로 분리)
-// id 생성은 항상 동일하게! (마이크로초 통일)
-const makeItemId = (group, time) => {
-  let iso = new Date(time).toISOString();
-  iso = iso.replace(/(\.\d{3})\d*Z$/, "$1Z"); // 소수점 3자리로 맞춤
-  return `${group}-${iso}`;
-};
-
 const UnifiedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
   const { poolRef, register, unregister } = useContext(TimelineContext);
