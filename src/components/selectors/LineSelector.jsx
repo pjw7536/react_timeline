@@ -18,7 +18,7 @@ const LineSelector = ({ lineId, setLineId }) => {
     <div className="relative">
       <select
         value={lineId ?? ""}
-        onChange={(e) => setLineId(Number(e.target.value))}
+        onChange={(e) => setLineId(e.target.value)}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +
           "rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 " +

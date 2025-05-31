@@ -10,8 +10,10 @@ export const fetchLines = async () => {
 };
 
 // 선택한 라인의 "설비(EQP) 목록"을 가져오는 API
-export const fetchEquipments = async (lineId) => {
-  const response = await fetch(`${API_BASE_URL}/equipments?lineId=${lineId}`);
+export const fetchEquipments = async (lineId, sdwtId) => {
+  const params = new URLSearchParams({ lineId });
+  if (sdwtId) params.append("sdwtId", sdwtId);
+  const response = await fetch(`${API_BASE_URL}/equipments?${params}`);
   if (!response.ok) throw new Error("Failed to fetch equipments");
   return response.json();
 };
@@ -41,5 +43,12 @@ export const fetchRACBLog = async (eqpId) => {
 export const fetchCTTTMLog = async (eqpId) => {
   const response = await fetch(`${API_BASE_URL}/ctttm-log?eqpId=${eqpId}`);
   if (!response.ok) throw new Error("Failed to fetch CTTTM log");
+  return response.json();
+};
+
+// SDWT 목록 API
+export const fetchSDWT = async (lineId) => {
+  const response = await fetch(`${API_BASE_URL}/sdwt?lineId=${lineId}`);
+  if (!response.ok) throw new Error("Failed to fetch SDWT");
   return response.json();
 };

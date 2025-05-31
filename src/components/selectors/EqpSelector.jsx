@@ -7,10 +7,12 @@ import LoadingSpinner from "../common/LoadingSpinner";
  * - lineId가 없으면 드롭다운이 비활성화됩니다.
  * - 장비 선택 시 setEqpId를 통해 상위 컴포넌트로 선택값이 전달됩니다.
  */
-const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
-  // lineId가 있을 때만 해당 라인의 EQP 목록을 가져옵니다.
-  // data: EQP 배열, isLoading: 로딩중 여부
-  const { data: eqps = [], isLoading } = useEquipments(lineId, !!lineId);
+const EqpSelector = ({ lineId, sdwtId, eqpId, setEqpId }) => {
+  const { data: eqps = [], isLoading } = useEquipments(
+    lineId,
+    sdwtId,
+    !!lineId && !!sdwtId
+  );
 
   // 라인이 선택되지 않은 경우: 비활성화된 드롭다운만 표시
   if (!lineId)
@@ -38,7 +40,7 @@ const EqpSelector = ({ lineId, eqpId, setEqpId }) => {
     <div className="relative">
       <select
         value={eqpId ?? ""}
-        onChange={(e) => setEqpId(Number(e.target.value))}
+        onChange={(e) => setEqpId(e.target.value)}
         disabled={!lineId || eqps.length === 0}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +

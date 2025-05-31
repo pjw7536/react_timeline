@@ -17,10 +17,10 @@ export const useLines = () =>
  * - enabled: 라인ID가 있을 때만 동작
  * - 캐시 유지 시간: 30분
  */
-export const useEquipments = (lineId) =>
+export const useEquipments = (lineId, sdwtId, enabled) =>
   useQuery({
-    queryKey: ["equipments", lineId],
-    queryFn: () => api.fetchEquipments(lineId).then((r) => r.data),
-    enabled: !!lineId,
+    queryKey: ["equipments", lineId, sdwtId],
+    queryFn: () => api.fetchEquipments(lineId, sdwtId).then((r) => r.data),
+    enabled,
     staleTime: 1000 * 60 * 30,
   });

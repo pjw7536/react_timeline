@@ -8,17 +8,21 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useEqpStatusLog } from "../hooks/useEqpStatusLog";
 import { useTipLog } from "../hooks/useTIPLog";
 import { useRacbLog } from "../hooks/useRacbLog";
+import { useCtttmLog } from "../hooks/useCTTTMLog";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
+import SDWTSelector from "../components/selectors/SDWTSelector";
 
 const DATA_TYPES = {
   EQP: "EQP_STATUS",
   TIP: "TIP_STATUS",
   RACB: "RACB_LOG",
+  CTTTM: "CTTTM_LOG",
 };
 
 const TimelinePage = () => {
   const [lineId, setLineId] = useState(null);
   const [eqpId, setEqpId] = useState(null);
+  const [sdwtId, setSdwtId] = useState(null);
   const [typeFilters, setTypeFilters] = useState({
     [DATA_TYPES.EQP]: true,
     [DATA_TYPES.TIP]: true,
@@ -28,7 +32,8 @@ const TimelinePage = () => {
   const { data: runData = [], isLoading: l1 } = useEqpStatusLog(eqpId);
   const { data: stepData = [], isLoading: l2 } = useTipLog(eqpId);
   const { data: eventData = [], isLoading: l3 } = useRacbLog(eqpId);
-  const isLoading = l1 || l2 || l3;
+  const { data: ctttmData = [], isLoading: l4 } = useCtttmLog(eqpId); // ⬅️ 추가
+  const isLoading = l1 || l2 || l3 || l4;
 
   const combinedAndSortedData = useMemo(() => {
     if (isLoading || !eqpId) return [];
@@ -60,11 +65,22 @@ const TimelinePage = () => {
       info3: "",
     }));
 
+    const transformedCTTTM = ctttmData.map((item) => ({
+      originalTimestamp: new Date(item.occurred_at),
+      displayTimestamp: new Date(item.occurred_at).toLocaleString(),
+      type: DATA_TYPES.CTTTM, // ✅ type 설정
+      info1: item.event_type,
+      info2: item.comment,
+      info3: "",
+    }));
+
     const allData = [
       ...transformedRun,
       ...transformedStep,
       ...transformedEvent,
+      ...transformedCTTTM, // ✅ 추가
     ];
+
     allData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
     return allData;
   }, [runData, stepData, eventData, isLoading, eqpId]);
@@ -79,7 +95,7 @@ const TimelinePage = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-120px)] gap-4">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-120px)] gap-4 mt-4">
       {/* 좌측: 필터/선택/테이블 포함 */}
       <div className="lg:w-[40%] flex flex-col gap-4 h-full">
         {/* 상단 UI (타이틀 + 선택기 + 체크박스) */}
@@ -87,9 +103,19 @@ const TimelinePage = () => {
           <h2 className="text-lg font-bold mb-3 text-slate-900 dark:text-white">
             📊 EQP 타임라인 뷰어
           </h2>
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="grid grid-cols-3 gap-2 mb-2">
             <LineSelector lineId={lineId} setLineId={setLineId} />
-            <EqpSelector lineId={lineId} eqpId={eqpId} setEqpId={setEqpId} />
+            <SDWTSelector
+              lineId={lineId}
+              sdwtId={sdwtId}
+              setSdwtId={setSdwtId}
+            />
+            <EqpSelector
+              lineId={lineId}
+              sdwtId={sdwtId}
+              eqpId={eqpId}
+              setEqpId={setEqpId}
+            />
           </div>
           <div className="flex gap-3 flex-wrap">
             {Object.keys(DATA_TYPES).map((typeKey) => (
