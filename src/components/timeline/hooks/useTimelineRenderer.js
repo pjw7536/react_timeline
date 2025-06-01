@@ -54,7 +54,7 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
         },
       },
     };
-    const items = new DataSet(processData(groupKey, data, range.max));
+    const items = new DataSet(processData(groupKey, data));
     tlRef.current = new Timeline(
       containerRef.current,
       items,
@@ -96,9 +96,7 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
       range.max
     );
     if (tlRef.current) {
-      tlRef.current.setItems(
-        new DataSet(processData(groupKey, data, range.max))
-      );
+      tlRef.current.setItems(new DataSet(processData(groupKey, data)));
     }
   }, [data, groupKey, range.max]);
 

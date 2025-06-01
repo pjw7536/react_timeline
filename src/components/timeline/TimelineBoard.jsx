@@ -1,47 +1,58 @@
+// src/components/timeline/TimelineBoard.jsx
 import React, { useMemo } from "react";
-import { useEqpStatusLog } from "../../hooks/useEqpStatusLog";
-import { useTipLog } from "../../hooks/useTIPLog";
-import { useRacbLog } from "../../hooks/useRacbLog";
-import { useCtttmLog } from "../../hooks/useCTTTMLog";
-import LoadingSpinner from "../common/LoadingSpinner";
 import NonStackedTimeline from "./NonStackedTimeline";
 import StackedTimeline from "./StackedTimeline";
 import { calcRange, addBuffer } from "../../utils/timelineUtils";
 
-const TimelineBoard = ({ eqpId }) => {
-  const { data: eqp_log = [], isLoading: l1 } = useEqpStatusLog(eqpId);
-  const { data: tip_log = [], isLoading: l2 } = useTipLog(eqpId);
-  const { data: racb_log = [], isLoading: l3 } = useRacbLog(eqpId);
-  const { data: ctttm_log = [], isLoading: l4 } = useCtttmLog(eqpId);
+export default function TimelineBoard({ dataMap }) {
+  // dataMap = { EQP_LOG: [...], TIP_LOG: [...], RACB_LOG: [...], CTTTM_LOG: [...] }
 
-  if (!eqpId) return null;
-  if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
+  // 1) "EQP_LOG + TIP_LOG" 을 NonStackedTimeline에 넘길 것
+  const eqpLogArr = dataMap.EQP_LOG || [];
+  const tipLogArr = dataMap.TIP_LOG || [];
 
-  const baseRange = useMemo(
-    () => calcRange(eqp_log, tip_log, racb_log, ctttm_log),
-    [eqp_log, tip_log, racb_log, ctttm_log]
+  // 2) "CTTTM_LOG + RACB_LOG" 을 StackedTimeline에 넘길 것
+  const ctttmLogArr = dataMap.CTTTM_LOG || [];
+  const racbLogArr = dataMap.RACB_LOG || [];
+
+  // 3) 전체 로그 배열을 합쳐서 시간 범위 계산 (NonStacked에 사용할 range)
+  const allLogs = useMemo(
+    () => [...eqpLogArr, ...tipLogArr, ...ctttmLogArr, ...racbLogArr],
+    [eqpLogArr, tipLogArr, ctttmLogArr, racbLogArr]
   );
 
-  const fullRange = useMemo(
-    () =>
-      baseRange.min && baseRange.max
-        ? addBuffer(baseRange.min.getTime(), baseRange.max.getTime())
-        : { min: new Date(), max: new Date() },
-    [baseRange.min, baseRange.max]
-  );
+  const fullRange = useMemo(() => {
+    const r = calcRange(allLogs);
+    if (r.min && r.max) {
+      return addBuffer(r.min.getTime(), r.max.getTime());
+    } else {
+      // 기본: 오늘 날짜 전체
+      const now = new Date();
+      return {
+        min: new Date(now.setHours(0, 0, 0, 0)),
+        max: new Date(now.setHours(23, 59, 59, 999)),
+      };
+    }
+  }, [allLogs]);
 
   return (
     <div className="w-full space-y-4">
+      {/* 🟡 EQP_LOG + TIP_LOG 는 point/range 구분 없이 stack 없이 나란히 보여주는 NonStackedTimeline */}
       <NonStackedTimeline
-        dataMap={{ EQP_LOG: eqp_log, TIP_LOG: tip_log }}
+        dataMap={{
+          EQP_LOG: eqpLogArr,
+          TIP_LOG: tipLogArr,
+        }}
         range={fullRange}
       />
+
+      {/* 🟡 CTTTM_LOG + RACB_LOG 은 point 형(logType 별로 stack) 보여주는 StackedTimeline */}
       <StackedTimeline
-        dataMap={{ CTTTM_LOG: ctttm_log, RACB_LOG: racb_log }}
-        range={fullRange}
+        dataMap={{
+          CTTTM_LOG: ctttmLogArr,
+          RACB_LOG: racbLogArr,
+        }}
       />
     </div>
   );
-};
-
-export default TimelineBoard;
+}

@@ -1,21 +1,25 @@
 @import "tailwindcss";
 
-/* vis-timeline용 커스텀 스타일링 */
-/* 전체 타임라인 영역 기본 마진 */
+/* ─────────────────────────────────────────────────────────────────────────
+   vis-timeline용 커스텀 스타일링 전체 (포인트형·레인지형 동일 하이라이트)
+───────────────────────────────────────────────────────────────────────── */
+
+/* 1) 전체 타임라인 영역 기본 마진 */
 .timeline-container {
   margin-bottom: 16px;
 }
 
-/* 각 vis-item(타임라인 아이템)에 Tailwind 색상 스타일 적용 */
+/* 2) vis-item(타임라인 아이템) 공통 스타일 */
 .vis-item {
   @apply border border-transparent;
   color: #334155; /* slate-800 */
   border-radius: 0 !important;
   margin-right: -1px;
   box-shadow: none !important;
+  pointer-events: all !important; /* 클릭 허용 (range, point 모두) */
 }
 
-/* 주요 상태별 색상 (Tailwind 색상 기준, groupConfig와 일치시켜야 함) */
+/* 3) 주요 상태별 색상 (Tailwind 기준, groupConfig와 일치) */
 .vis-item.bg-red-500    { @apply bg-red-500 border-red-600; }
 .vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
 .vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
@@ -27,61 +31,91 @@
 .vis-item.bg-green-600  { @apply bg-green-600 border-green-700; }
 .vis-item.bg-amber-600  { @apply bg-amber-600 border-amber-700; }
 
-/* 다크모드에서 아이템 텍스트 색상 */
+/* 4) Dark 모드에서 아이템 텍스트 색상 */
 .dark .vis-item {
   color: #f1f5f9; /* slate-100 */
 }
 
-/* 다크모드: 시간축(라벨/텍스트) 색상 */
-.dark .vis-time-axis .vis-text,
-.dark .vis-time-axis .vis-label {
-  color: #f1f5f9 !important;
+/* 5) 레인지(range) 아이템(범위형) 공통 스타일 */
+.vis-item.vis-range {
+  pointer-events: all !important; /* 클릭 허용 */
+  min-height: 20px !important;    /* 클릭 영역 확보 */
 }
 
-/* 라이트모드(기본) 시간축 색상 */
-.vis-time-axis .vis-text,
-.vis-time-axis .vis-label {
-  color: #334155;
+/* 6) 포인트(point) 아이템(단일 시점) 공통 스타일 */
+/* (기본적으로 포인트형은 높이가 충분하므로 min-height 지정은 생략 가능합니다) */
+.vis-item.vis-point {
+  pointer-events: all !important;
 }
 
-/* 선택된 아이템(클릭 시 강조) */
-.vis-item.selected {
-  @apply border-2 border-amber-500;
-  z-index: 10;
+/* 7) 모든 선택된(vis-selected) 아이템(포인트·레인지) 강조 스타일 */
+.vis-item.vis-selected {
+  background-color: rgba(251, 146, 60, 0.2) !important; /* amber-400 반투명 */
+  border: 2px dashed #fb923c !important;                /* 점선 테두리 (amber-400) */
+  filter: brightness(1.1) !important;                    /* 약간 밝기 증가 */
+  z-index: 10 !important;                                /* 다른 레이어 위로 배치 */
 }
 
-/* 이미 있는 .vis-item.selected 밑에 바로 이어서 넣어 주세요 */
-.vis-item.vis-range.selected {
-  outline: 3px dashed #fb923c !important;  /* amber-400 */
-  outline-offset: -1px;
-  filter: brightness(1.2);                 /* 살짝 강조 */
-}
-
-
+/* 8) 시간축(라벨/텍스트) 공통 */
 .vis-time-axis .vis-text,
 .vis-time-axis .vis-label {
   font-size: 13px !important;
+  color: #334155; /* slate-800 */
 }
 
-/* 다크모드에서 타임라인 그룹 이름(라벨)을 흰색으로 */
+/* 9) Dark 모드에서 시간축(라벨/텍스트) */
 .dark .vis-time-axis .vis-text,
 .dark .vis-time-axis .vis-label {
-  color: #f1f5f9 !important;
+  color: #f1f5f9 !important; /* slate-100 */
 }
 
+/* 10) Dark 모드에서 그룹 라벨 텍스트 */
 .dark .vis-group .vis-label,
 .dark .vis-group .vis-inner {
-  color: #f1f5f9 !important;
+  color: #f1f5f9 !important; /* slate-100 */
 }
 
-/* 기본 */
+/* 11) 기본 그룹 라벨 텍스트 */
 .vis-label.custom-group-label {
   color: #334155; /* slate-800 */
 }
 
-/* 다크모드 */
+/* 12) Dark 모드 기본 그룹 라벨 텍스트 */
 .dark .vis-label.custom-group-label {
   color: #f1f5f9 !important; /* slate-100 */
 }
 
+/* 13) Slim 스크롤바 스타일 (테이블 영역) */
+.table-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
+/* 14) 라이트 모드: 스크롤바 트랙 */
+.table-scroll::-webkit-scrollbar-track {
+  background-color: #e2e8f0; /* slate-200 */
+  border-radius: 10px;
+}
+
+/* 15) 라이트 모드: 스크롤바 thumb */
+.table-scroll::-webkit-scrollbar-thumb {
+  background-color: #94a3b8; /* slate-400 */
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 16) Dark 모드: 스크롤바 트랙 */
+.dark .table-scroll::-webkit-scrollbar-track {
+  background-color: #1e293b; /* slate-800 */
+}
+
+/* 17) Dark 모드: 스크롤바 thumb */
+.dark .table-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569; /* slate-600 */
+  border: 1px solid #1e293b;
+}
+
+/* 18) Dark 모드: 스크롤바 thumb Hover */
+.dark .table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b; /* slate-500 */
+}

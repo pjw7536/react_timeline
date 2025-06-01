@@ -17,7 +17,7 @@ const LineSelector = ({ lineId, setLineId }) => {
   return (
     <div className="relative">
       <select
-        value={lineId ?? ""}
+        value={lineId || ""}
         onChange={(e) => setLineId(e.target.value)}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +

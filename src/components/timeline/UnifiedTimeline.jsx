@@ -1,7 +1,7 @@
 // src/components/timeline/UnifiedTimeline.jsx
 import React, { useEffect, useRef, useContext } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
-import { processData } from "../../utils/timelineUtils";
+import { processData, makeItemId } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
 
@@ -34,7 +34,7 @@ const UnifiedTimeline = ({ dataMap, range }) => {
     const items = new DataSet(
       groupOrderList.flatMap(
         (key) =>
-          (processData(key, dataMap[key] || [], range.max) || []).filter(
+          (processData(key, dataMap[key] || []) || []).filter(
             (item) => !!item && !!item.id
           ) // id가 확실히 있을 때만
       )

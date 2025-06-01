@@ -23,45 +23,42 @@ export const makeItemId = (group, time) => {
 };
 
 /**
- * vis-timeline 데이터 변환 함수 (모든 group에서 makeItemId만 사용!)
+ * 통일된 BaseLog 구조의 로그 배열을 vis-timeline 아이템으로 변환
+ * @param {string} logType - 예: EQP_LOG, TIP_LOG 등
+ * @param {BaseLog[]} data - 해당 로그 타입의 데이터 배열
+ * @returns vis-timeline items[]
  */
-export const processData = (groupKey, data) => {
-  const cfg = groupConfig[groupKey];
-  const { columns, stateColors } = cfg;
+export const processData = (logType, data) => {
+  const cfg = groupConfig[logType];
+  if (!cfg) {
+    console.warn(`[processData] 그룹 설정이 없습니다: ${logType}`);
+    return [];
+  }
 
   return data
-    .filter((row) => row && row[columns.time])
-    .map((row) => {
-      const start = new Date(row[columns.time]);
-      const next = data[data.indexOf(row) + 1];
-      // 마지막 아이템은 range.max까지 끝이 연장됩니다.
-      const end = next
-        ? new Date(next[columns.time])
-        : new Date(
-            start.getFullYear(),
-            start.getMonth(),
-            start.getDate(),
-            23,
-            59,
-            59
-          );
-      const state = row[columns.state];
-      const colorCls = stateColors[state] ?? "bg-gray-300";
-      const groupId =
-        columns.groupBy && row[columns.groupBy]
-          ? row[columns.groupBy]
-          : groupKey;
+    .filter((log) => log && log.eventTime)
+    .map((log) => {
+      const start = new Date(log.eventTime);
+      const end = log.endTime ? new Date(log.endTime) : start;
+      const isRange = !!log.endTime;
+      const state = log.eventType;
+      const colorCls = cfg.stateColors[state] || "bg-gray-300";
 
-      // point 타입일 때 end=start로
-      const isPoint = cfg.type === "point";
       return {
-        id: makeItemId(groupKey, row[columns.time]),
-        group: groupId,
-        content: cfg.type === "range" ? undefined : row[columns.comment],
+        id: log.id,
+        group: logType,
+        content: log.comment || "", // 간단한 주석 표시
         start,
-        end: isPoint ? start : end, // <-- 여기! point도 end=start!
-        type: cfg.type,
+        end,
+        type: isRange ? "range" : "point",
         className: colorCls,
+        title: [
+          log.comment,
+          log.operator ? `👤 ${log.operator}` : null,
+          log.url ? `🔗 ${log.url}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
       };
     });
 };
@@ -91,9 +88,11 @@ export const baseOptions = (min, max) => ({
 export const calcRange = (...arrs) => {
   const ts = arrs
     .flat()
-    .map((d) =>
-      new Date(d.timestamp || d.start_time || d.occurred_at).getTime()
-    );
+    .flatMap((d) => [
+      new Date(d.eventTime).getTime(),
+      d.endTime ? new Date(d.endTime).getTime() : undefined,
+    ])
+    .filter(Boolean);
   if (ts.length === 0) return { min: new Date(), max: new Date() };
   const min = new Date(Math.min(...ts));
   const max = new Date(Math.max(...ts));

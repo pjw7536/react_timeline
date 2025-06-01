@@ -8,10 +8,9 @@ import * as api from "../api/historyAPI";
 export const useLines = () =>
   useQuery({
     queryKey: ["lines"],
-    queryFn: () => api.fetchLines().then((r) => r.data),
+    queryFn: () => api.fetchLines(),
     staleTime: 1000 * 60 * 30,
   });
-
 /**
  * 선택된 라인의 "설비(EQP) 목록"을 불러오는 훅.
  * - enabled: 라인ID가 있을 때만 동작
@@ -20,7 +19,7 @@ export const useLines = () =>
 export const useEquipments = (lineId, sdwtId, enabled) =>
   useQuery({
     queryKey: ["equipments", lineId, sdwtId],
-    queryFn: () => api.fetchEquipments(lineId, sdwtId).then((r) => r.data),
+    queryFn: () => api.fetchEquipments(lineId, sdwtId),
     enabled,
     staleTime: 1000 * 60 * 30,
   });

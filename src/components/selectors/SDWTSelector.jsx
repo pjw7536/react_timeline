@@ -28,7 +28,7 @@ const SDWTSelector = ({ lineId, sdwtId, setSdwtId }) => {
   return (
     <div className="relative">
       <select
-        value={sdwtId ?? ""}
+        value={sdwtId || ""}
         onChange={(e) => setSdwtId(e.target.value)}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +

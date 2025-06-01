@@ -39,7 +39,7 @@ const EqpSelector = ({ lineId, sdwtId, eqpId, setEqpId }) => {
   return (
     <div className="relative">
       <select
-        value={eqpId ?? ""}
+        value={eqpId || ""}
         onChange={(e) => setEqpId(e.target.value)}
         disabled={!lineId || eqps.length === 0}
         className={

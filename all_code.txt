@@ -1,18 +1,24 @@
 ﻿
 ----- C:\Users\pjw75\Desktop\react-prc\src\api\historyAPI.js -----
 
-// API 요청을 위한 함수들 정의. 실제 백엔드 API와 통신할 때 사용합니다.
+const API_BASE_URL = "http://127.0.0.1:8000";
 
-const API_BASE_URL = "http://127.0.0.1:8000"; // 서버 주소. 실제 운영시 변경 필요!
-
-// "라인 목록"을 가져오는 API
+// 🔹 라인 목록 가져오기
 export const fetchLines = async () => {
   const response = await fetch(`${API_BASE_URL}/lines`);
   if (!response.ok) throw new Error("Failed to fetch lines");
+  return response.json(); // 👈 FastAPI는 JSON 바로 반환
+};
+
+// 🔹 SDWT 목록 가져오기 (lineId 필요)
+export const fetchSDWT = async (lineId) => {
+  const params = new URLSearchParams({ lineId });
+  const response = await fetch(`${API_BASE_URL}/sdwts?${params}`);
+  if (!response.ok) throw new Error("Failed to fetch SDWTs");
   return response.json();
 };
 
-// 선택한 라인의 "설비(EQP) 목록"을 가져오는 API
+// 🔹 설비 목록 가져오기 (lineId 필수, sdwtId 선택)
 export const fetchEquipments = async (lineId, sdwtId) => {
   const params = new URLSearchParams({ lineId });
   if (sdwtId) params.append("sdwtId", sdwtId);
@@ -21,38 +27,14 @@ export const fetchEquipments = async (lineId, sdwtId) => {
   return response.json();
 };
 
-// 특정 설비의 "가동 상태(RUN)" 데이터를 가져오는 API
-export const fetchEQPStatus = async (eqpId) => {
-  const response = await fetch(`${API_BASE_URL}/run-status?eqpId=${eqpId}`);
-  if (!response.ok) throw new Error("Failed to fetch run status");
-  return response.json();
-};
-
-// 특정 설비의 "Tip 상태(TIP)" 데이터를 가져오는 API
-export const fetchTIPLog = async (eqpId) => {
-  const response = await fetch(`${API_BASE_URL}/step-status?eqpId=${eqpId}`);
-  if (!response.ok) throw new Error("Failed to fetch step status");
-  return response.json();
-};
-
-// 특정 설비의 "RACB 로그(변경점)" 데이터를 가져오는 API
-export const fetchRACBLog = async (eqpId) => {
-  const response = await fetch(`${API_BASE_URL}/event-log?eqpId=${eqpId}`);
-  if (!response.ok) throw new Error("Failed to fetch event log");
-  return response.json();
-};
-
-// 특정 설비의 "CTTTM 로그" 데이터를 가져오는 API
-export const fetchCTTTMLog = async (eqpId) => {
-  const response = await fetch(`${API_BASE_URL}/ctttm-log?eqpId=${eqpId}`);
-  if (!response.ok) throw new Error("Failed to fetch CTTTM log");
-  return response.json();
-};
-
-// SDWT 목록 API
-export const fetchSDWT = async (lineId) => {
-  const response = await fetch(`${API_BASE_URL}/sdwt?lineId=${lineId}`);
-  if (!response.ok) throw new Error("Failed to fetch SDWT");
+// 🔹 통합 로그 목록 가져오기 (lineId · eqpId 필수, sdwtId 선택)
+/* NOTE: eqpId는 백엔드에서 필수!  */
+export const fetchLogs = async ({ lineId, sdwtId, eqpId }) => {
+  if (!eqpId) throw new Error("eqpId is required");
+  const params = new URLSearchParams({ lineId, eqpId });
+  if (sdwtId) params.append("sdwtId", sdwtId);
+  const response = await fetch(`${API_BASE_URL}/logs?${params}`);
+  if (!response.ok) throw new Error("Failed to fetch logs");
   return response.json();
 };
 
@@ -459,7 +441,7 @@ const EqpSelector = ({ lineId, sdwtId, eqpId, setEqpId }) => {
   return (
     <div className="relative">
       <select
-        value={eqpId ?? ""}
+        value={eqpId || ""}
         onChange={(e) => setEqpId(e.target.value)}
         disabled={!lineId || eqps.length === 0}
         className={
@@ -530,7 +512,7 @@ const LineSelector = ({ lineId, setLineId }) => {
   return (
     <div className="relative">
       <select
-        value={lineId ?? ""}
+        value={lineId || ""}
         onChange={(e) => setLineId(e.target.value)}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +
@@ -595,7 +577,7 @@ const SDWTSelector = ({ lineId, sdwtId, setSdwtId }) => {
   return (
     <div className="relative">
       <select
-        value={sdwtId ?? ""}
+        value={sdwtId || ""}
         onChange={(e) => setSdwtId(e.target.value)}
         className={
           "w-full appearance-none block px-3 py-1.5 border border-slate-300 dark:border-slate-600 " +
@@ -634,15 +616,20 @@ const CombinedDataTable = ({ data }) => {
   const rowRefs = useRef({});
 
   useEffect(() => {
-    if (selectedRow && rowRefs.current[selectedRow]) {
+    if (
+      selectedRow &&
+      Object.prototype.hasOwnProperty.call(rowRefs.current, selectedRow)
+    ) {
       rowRefs.current[selectedRow].scrollIntoView({
         behavior: "smooth",
         block: "center",
       });
     } else if (selectedRow) {
-      // 렌더 타이밍 문제로 100ms 후 재시도
+      // 렌더 타이밍 문제로 재시도
       setTimeout(() => {
-        if (rowRefs.current[selectedRow]) {
+        if (
+          Object.prototype.hasOwnProperty.call(rowRefs.current, selectedRow)
+        ) {
           rowRefs.current[selectedRow].scrollIntoView({
             behavior: "smooth",
             block: "center",
@@ -664,9 +651,10 @@ const CombinedDataTable = ({ data }) => {
   // 테이블 컬럼 정의
   const columns = [
     { header: "시간", accessor: "displayTimestamp" },
-    { header: "타입", accessor: "type" },
+    { header: "타입", accessor: "logType" },
     { header: "정보 1", accessor: "info1" },
     { header: "정보 2", accessor: "info2" },
+    { header: "지속(초)", accessor: "duration" },
   ];
 
   return (
@@ -798,7 +786,7 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
         },
       },
     };
-    const items = new DataSet(processData(groupKey, data, range.max));
+    const items = new DataSet(processData(groupKey, data));
     tlRef.current = new Timeline(
       containerRef.current,
       items,
@@ -840,9 +828,7 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
       range.max
     );
     if (tlRef.current) {
-      tlRef.current.setItems(
-        new DataSet(processData(groupKey, data, range.max))
-      );
+      tlRef.current.setItems(new DataSet(processData(groupKey, data)));
     }
   }, [data, groupKey, range.max]);
 
@@ -869,18 +855,19 @@ export const useTimelineRenderer = (containerRef, groupKey, data, range) => {
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\NonStackedTimeline.jsx -----
 
 // src/components/timeline/NonStackedTimeline.jsx
+
 import React, { useEffect, useRef, useContext } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
 import { processData } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
-import { makeItemId } from "../../utils/timelineUtils";
 
 const NonStackedTimeline = ({ dataMap, range }) => {
   const containerRef = useRef(null);
   const { register, unregister, poolRef } = useContext(TimelineContext);
   const { selectedRow, setSelectedRow } = useSelection();
 
+  // 그룹 정의 (EQP_LOG, TIP_LOG 순서)
   const groups = new DataSet([
     {
       id: "EQP_LOG",
@@ -897,12 +884,12 @@ const NonStackedTimeline = ({ dataMap, range }) => {
   ]);
 
   useEffect(() => {
+    // 모든 그룹 데이터를 flatten → vis-timeline items 생성
     const items = new DataSet(
-      groups
-        .get()
-        .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
+      groups.get().flatMap((g) => processData(g.id, dataMap[g.id] || []))
     );
 
+    // 타임라인 인스턴스 생성 (stack: false)
     const timeline = new Timeline(containerRef.current, items, groups, {
       stack: false,
       min: range.min,
@@ -912,36 +899,39 @@ const NonStackedTimeline = ({ dataMap, range }) => {
       groupOrder: (a, b) =>
         groups.get().findIndex((g) => g.id === a.id) -
         groups.get().findIndex((g) => g.id === b.id),
+      selectable: true, // 클릭으로 아이템을 선택 가능하게 함
+      selectableOverlap: true, // 레인지 아이템(겹치는 구간)도 선택되도록 허용
     });
 
+    // 초기 윈도우(뷰포트) 설정
     timeline.setWindow(range.min, range.max);
     register(timeline);
 
+    // 다른 타임라인과 X축 동기화
     const sync = ({ start, end }) => {
       poolRef.current.forEach((tl) => {
-        if (tl !== timeline) tl.setWindow(start, end, { animation: false });
+        if (tl !== timeline) {
+          tl.setWindow(start, end, { animation: false });
+        }
       });
     };
     timeline.on("rangechange", sync);
 
+    // (A) 선택 직후 props.items 출력해 보기
     timeline.on("select", (props) => {
+      console.log("▶ NonStackedTimeline select event props:", props);
       if (props.items?.length) {
-        const selectedItem = timeline.itemsData.get(props.items[0]);
-        // For NonStackedTimeline (range items), always construct the ID
-        // from its group and start time to ensure consistency with CombinedDataTable.
-        if (selectedItem && selectedItem.start && selectedItem.group) {
-          const matchedId = makeItemId(selectedItem.group, selectedItem.start);
-          setSelectedRow(matchedId);
+        const rawId = props.items[0];
+        // (B) 실제 itemsData.get 결과까지 찍어 보기
+        const itemObj = timeline.itemsData.get(rawId);
+        console.log("    └ rawId:", rawId, " / details:", itemObj);
+        if (itemObj && itemObj.id) {
+          setSelectedRow(itemObj.id);
         } else {
-          // If essential info (start or group) is missing, or item not found,
-          // treat as a deselection or log an error if unexpected.
-          // For now, if an item was supposedly selected but we can't form an ID,
-          // we'll clear the selection to avoid inconsistent states.
-          if (selectedRow !== null) setSelectedRow(null);
+          setSelectedRow(null);
         }
       } else {
-        // No items selected, clear the selection.
-        //if (selectedRow !== null) setSelectedRow(null);
+        setSelectedRow(null);
       }
     });
 
@@ -952,21 +942,21 @@ const NonStackedTimeline = ({ dataMap, range }) => {
     };
   }, [dataMap, range]);
 
+  // selectedRow가 바뀔 때마다, 이 타임라인에도 선택 상태 반영
   useEffect(() => {
     if (!containerRef.current) return;
     const tl = poolRef.current.find(
       (t) => t.dom?.container === containerRef.current
     );
     if (!tl) return;
+
     const hasItem =
       tl.itemsData?.get instanceof Function && tl.itemsData.get(selectedRow);
 
-    // 여기에선 setSelectedRow(null) 하지 말 것!
     if (selectedRow && hasItem) {
       tl.setSelection([selectedRow]);
     } else {
       tl.setSelection([]);
-      // 이곳에 setSelectedRow(null) 호출 금지!!
     }
   }, [selectedRow, poolRef]);
 
@@ -986,18 +976,14 @@ export default NonStackedTimeline;
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\StackedTimeline.jsx -----
 
 // src/components/timeline/StackedTimeline.jsx
+
 import React, { useEffect, useRef, useContext } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
-import { processData } from "../../utils/timelineUtils";
+import { processData, calcRange, addBuffer } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
-import { makeItemId } from "../../utils/timelineUtils";
 
-/**
- * 타임라인의 zoom/pan(확대/이동) 상태가 사용자가 조작해도 유지됩니다.
- * setWindow는 최초 마운트시에만 1회만 호출!
- */
-const StackedTimeline = ({ dataMap, range }) => {
+const StackedTimeline = ({ dataMap }) => {
   const containerRef = useRef(null);
   const { register, unregister, poolRef } = useContext(TimelineContext);
   const {
@@ -1006,46 +992,69 @@ const StackedTimeline = ({ dataMap, range }) => {
     selectionSource = "timeline",
   } = useSelection();
 
-  // 그룹 정의 (고정 너비/높이)
+  // ─── 1. 그룹 정의 (height: 150px 로 고정)
   const groups = new DataSet([
     {
       id: "CTTTM_LOG",
       content: "CTTTM 이벤트",
-      height: 150,
+      height: 100, // ← 그룹 높이를 150px로 고정
       className: "custom-group-label",
     },
     {
       id: "RACB_LOG",
       content: "RACB 이벤트",
-      height: 150,
+      height: 150, // ← 그룹 높이를 150px로 고정
       className: "custom-group-label",
     },
   ]);
 
+  // ─── 2. 전체 로그에서 범위 계산 (생략하셔도 됩니다)
+  const allLogs = [...(dataMap.CTTTM_LOG || []), ...(dataMap.RACB_LOG || [])];
+  const baseRange = calcRange(allLogs);
+  const validRange = baseRange.min && baseRange.max;
+  const fullRange = validRange
+    ? addBuffer(baseRange.min.getTime(), baseRange.max.getTime())
+    : {
+        min: new Date(new Date().setHours(0, 0, 0, 0)),
+        max: new Date(new Date().setHours(23, 59, 59, 999)),
+      };
+
   useEffect(() => {
-    // 1️⃣ 타임라인 인스턴스 생성 (마운트) — 최초 1회만 setWindow!
+    if (!containerRef.current) return;
+
+    // ─── 3. 아이템 생성
     const items = new DataSet(
-      groups
-        .get()
-        .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
+      groups.get().flatMap((g) => processData(g.id, dataMap[g.id] || []))
     );
-    const timeline = new Timeline(containerRef.current, items, groups, {
-      height: "550px",
+
+    // ─── 4. 타임라인 옵션
+    const options = {
+      /* 
+       ── 핵심 변경점 ──
+       groupHeightMode: "fixed"   // “height 필드가 최소 및 고정값” 으로 동작하게 함 
+       verticalScroll: true       // 그룹 높이(150px)를 넘어가는 아이템이 있으면, 그룹 내부에서 스크롤이 생기도록 함 
+      */
+      //height: "550px",
       stack: true,
-      min: range.min,
-      max: range.max,
-      verticalScroll: false,
+      min: fullRange.min,
+      max: fullRange.max,
+      /* ── 여기서 verticalScroll: true 추가 ── */
+      verticalScroll: true,
+      /* ── margin:item, axis 등은 기존대로 유지 ── */
       margin: { item: 0, axis: 0 },
       groupHeightMode: "fixed",
       groupOrder: (a, b) =>
         groups.get().findIndex((g) => g.id === a.id) -
         groups.get().findIndex((g) => g.id === b.id),
-    });
+    };
 
-    timeline.setWindow(range.min, range.max); // ✅ 최초 1회만
+    const timeline = new Timeline(containerRef.current, items, groups, options);
 
+    // ─── 초기 윈도우 설정
+    timeline.setWindow(fullRange.min, fullRange.max);
+
+    // ─── 타임라인 동기화
     register(timeline);
-
     const sync = ({ start, end }) => {
       poolRef.current.forEach((tl) => {
         if (tl !== timeline) {
@@ -1055,6 +1064,7 @@ const StackedTimeline = ({ dataMap, range }) => {
     };
     timeline.on("rangechange", sync);
 
+    // ─── 선택 이벤트
     timeline.on("select", (props) => {
       const selectedId = props.items?.[0];
       if (selectedId && typeof selectedId === "string") {
@@ -1064,68 +1074,39 @@ const StackedTimeline = ({ dataMap, range }) => {
       }
     });
 
-    // 언마운트 시 해제
     return () => {
       unregister(timeline);
       timeline.off("rangechange", sync);
       timeline.destroy();
     };
-    // eslint-disable-next-line
-  }, [
-    dataMap,
-    range.min,
-    range.max,
-    poolRef,
-    register,
-    unregister,
-    setSelectedRow,
-  ]);
+  }, [dataMap]);
 
-  // 2️⃣ 데이터가 바뀔 때 타임라인 항목만 갱신 (window 변경 X)
+  // ─── 5. selectedRow 변화 시, 선택 상태 동기화
   useEffect(() => {
+    if (!containerRef.current) return;
     const tl = poolRef.current.find(
       (t) => t.dom?.container === containerRef.current
     );
     if (!tl) return;
 
-    // 데이터셋 갱신만 (window/zoom/pan은 그대로)
-    tl.setItems(
-      new DataSet(
-        groups
-          .get()
-          .flatMap((g) => processData(g.id, dataMap[g.id] || [], range.max))
-      )
-    );
-  }, [dataMap, range.max, poolRef, groups]);
-
-  /**
-   * selectedRow, selectionSource가 바뀔 때마다 타임라인에 반영
-   * 테이블(row) 클릭이면 window도 ±24시간으로 이동!
-   * 타임라인 직접 클릭이면 window/focus는 안 바꿈.
-   */
-  useEffect(() => {
-    if (!containerRef.current || !selectedRow) return;
-
-    // 타임라인 인스턴스
-    const tl = poolRef.current.find(
-      (t) => t.dom?.container === containerRef.current
-    );
-    if (!tl) return;
-
-    // (1) 해당 아이템이 존재할 때만 focus
-    const item = tl.itemsData.get(selectedRow);
-    if (item) {
-      // focus 호출 (focus는 setWindow보다 깔끔)
-      tl.setSelection([selectedRow]);
-      if (selectionSource === "table") {
-        setTimeout(() => {
-          try {
-            tl.focus(selectedRow, { animation: { duration: 200 } });
-          } catch {}
-        }, 0); // ← 0~100ms 짧은 딜레이를 넣으면, 아이템 렌더 동기화에 도움됨
+    if (selectedRow) {
+      const item = tl.itemsData.get(selectedRow);
+      if (item) {
+        tl.setSelection([selectedRow]);
+        if (selectionSource === "table") {
+          setTimeout(() => {
+            try {
+              //tl.focus(selectedRow, { animation: { duration: 200 } });
+            } catch {}
+          }, 0);
+        }
+      } else {
+        tl.setSelection([]);
       }
+    } else {
+      tl.setSelection([]);
     }
-  }, [selectedRow, selectionSource, poolRef, dataMap, range.max]);
+  }, [selectedRow, selectionSource, poolRef, dataMap]);
 
   return (
     <div className="timeline-container">
@@ -1137,7 +1118,7 @@ const StackedTimeline = ({ dataMap, range }) => {
         className="timeline"
         style={{
           height: "550px",
-          overflow: "hidden",
+          overflow: "hidden", // 타임라인 전체 높이를 고정하려면 overflow hidden 유지
         }}
       />
     </div>
@@ -1149,53 +1130,64 @@ export default StackedTimeline;
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\TimelineBoard.jsx -----
 
+// src/components/timeline/TimelineBoard.jsx
 import React, { useMemo } from "react";
-import { useEqpStatusLog } from "../../hooks/useEqpStatusLog";
-import { useTipLog } from "../../hooks/useTIPLog";
-import { useRacbLog } from "../../hooks/useRacbLog";
-import { useCtttmLog } from "../../hooks/useCTTTMLog";
-import LoadingSpinner from "../common/LoadingSpinner";
 import NonStackedTimeline from "./NonStackedTimeline";
 import StackedTimeline from "./StackedTimeline";
 import { calcRange, addBuffer } from "../../utils/timelineUtils";
 
-const TimelineBoard = ({ eqpId }) => {
-  const { data: eqp_log = [], isLoading: l1 } = useEqpStatusLog(eqpId);
-  const { data: tip_log = [], isLoading: l2 } = useTipLog(eqpId);
-  const { data: racb_log = [], isLoading: l3 } = useRacbLog(eqpId);
-  const { data: ctttm_log = [], isLoading: l4 } = useCtttmLog(eqpId);
+export default function TimelineBoard({ dataMap }) {
+  // dataMap = { EQP_LOG: [...], TIP_LOG: [...], RACB_LOG: [...], CTTTM_LOG: [...] }
 
-  if (!eqpId) return null;
-  if (l1 || l2 || l3 || l4) return <LoadingSpinner />;
+  // 1) "EQP_LOG + TIP_LOG" 을 NonStackedTimeline에 넘길 것
+  const eqpLogArr = dataMap.EQP_LOG || [];
+  const tipLogArr = dataMap.TIP_LOG || [];
 
-  const baseRange = useMemo(
-    () => calcRange(eqp_log, tip_log, racb_log, ctttm_log),
-    [eqp_log, tip_log, racb_log, ctttm_log]
+  // 2) "CTTTM_LOG + RACB_LOG" 을 StackedTimeline에 넘길 것
+  const ctttmLogArr = dataMap.CTTTM_LOG || [];
+  const racbLogArr = dataMap.RACB_LOG || [];
+
+  // 3) 전체 로그 배열을 합쳐서 시간 범위 계산 (NonStacked에 사용할 range)
+  const allLogs = useMemo(
+    () => [...eqpLogArr, ...tipLogArr, ...ctttmLogArr, ...racbLogArr],
+    [eqpLogArr, tipLogArr, ctttmLogArr, racbLogArr]
   );
 
-  const fullRange = useMemo(
-    () =>
-      baseRange.min && baseRange.max
-        ? addBuffer(baseRange.min.getTime(), baseRange.max.getTime())
-        : { min: new Date(), max: new Date() },
-    [baseRange.min, baseRange.max]
-  );
+  const fullRange = useMemo(() => {
+    const r = calcRange(allLogs);
+    if (r.min && r.max) {
+      return addBuffer(r.min.getTime(), r.max.getTime());
+    } else {
+      // 기본: 오늘 날짜 전체
+      const now = new Date();
+      return {
+        min: new Date(now.setHours(0, 0, 0, 0)),
+        max: new Date(now.setHours(23, 59, 59, 999)),
+      };
+    }
+  }, [allLogs]);
 
   return (
     <div className="w-full space-y-4">
+      {/* 🟡 EQP_LOG + TIP_LOG 는 point/range 구분 없이 stack 없이 나란히 보여주는 NonStackedTimeline */}
       <NonStackedTimeline
-        dataMap={{ EQP_LOG: eqp_log, TIP_LOG: tip_log }}
+        dataMap={{
+          EQP_LOG: eqpLogArr,
+          TIP_LOG: tipLogArr,
+        }}
         range={fullRange}
       />
+
+      {/* 🟡 CTTTM_LOG + RACB_LOG 은 point 형(logType 별로 stack) 보여주는 StackedTimeline */}
       <StackedTimeline
-        dataMap={{ CTTTM_LOG: ctttm_log, RACB_LOG: racb_log }}
-        range={fullRange}
+        dataMap={{
+          CTTTM_LOG: ctttmLogArr,
+          RACB_LOG: racbLogArr,
+        }}
       />
     </div>
   );
-};
-
-export default TimelineBoard;
+}
 
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\components\timeline\UnifiedTimeline.jsx -----
@@ -1203,7 +1195,7 @@ export default TimelineBoard;
 // src/components/timeline/UnifiedTimeline.jsx
 import React, { useEffect, useRef, useContext } from "react";
 import { Timeline, DataSet } from "vis-timeline/standalone";
-import { processData } from "../../utils/timelineUtils";
+import { processData, makeItemId } from "../../utils/timelineUtils";
 import { TimelineContext } from "../../context/TimelineProvider";
 import { useSelection } from "../../context/SelectionContext";
 
@@ -1236,7 +1228,7 @@ const UnifiedTimeline = ({ dataMap, range }) => {
     const items = new DataSet(
       groupOrderList.flatMap(
         (key) =>
-          (processData(key, dataMap[key] || [], range.max) || []).filter(
+          (processData(key, dataMap[key] || []) || []).filter(
             (item) => !!item && !!item.id
           ) // id가 확실히 있을 때만
       )
@@ -1345,21 +1337,116 @@ const UnifiedTimeline = ({ dataMap, range }) => {
 export default UnifiedTimeline;
 
 
+----- C:\Users\pjw75\Desktop\react-prc\src\components\DrillDownSelector.jsx -----
+
+// src/components/DrillDownSelector.jsx
+import React, { useState, useEffect } from "react";
+import LineSelector from "./selectors/LineSelector";
+import SDWTSelector from "./selectors/SDWTSelector";
+import EqpSelector from "./selectors/EqpSelector";
+
+/**
+ * 드릴다운 선택 컴포넌트
+ * - Line → SDWT → EQP 순으로 선택
+ * - 선택 상태는 로컬에서 관리하고, onChange로 외부에 전달
+ */
+const DrillDownSelector = ({ onChange }) => {
+  const [lineId, setLineId] = useState("");
+  const [sdwtId, setSdwtId] = useState("");
+  const [eqpId, setEqpId] = useState("");
+
+  // 선택이 바뀔 때마다 상위 컴포넌트로 전달
+  useEffect(() => {
+    onChange({ lineId, sdwtId, eqpId });
+  }, [lineId, sdwtId, eqpId]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <LineSelector
+        lineId={lineId}
+        setLineId={(id) => {
+          setLineId(id);
+          setSdwtId(""); // 하위 선택 초기화
+          setEqpId("");
+        }}
+      />
+      <SDWTSelector
+        lineId={lineId}
+        sdwtId={sdwtId}
+        setSdwtId={(id) => {
+          setSdwtId(id);
+          setEqpId("");
+        }}
+      />
+      <EqpSelector
+        lineId={lineId}
+        sdwtId={sdwtId}
+        eqpId={eqpId}
+        setEqpId={setEqpId}
+      />
+    </div>
+  );
+};
+
+export default DrillDownSelector;
+
+
+----- C:\Users\pjw75\Desktop\react-prc\src\components\TimelineView.jsx -----
+
+import { Timeline, DataSet } from "vis-timeline/standalone";
+import { useEffect, useRef } from "react";
+
+export default function TimelineView({ items }) {
+  const containerRef = useRef();
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const groups = new DataSet([
+      { id: "EQP_LOG", content: "EQP 로그" },
+      { id: "TIP_LOG", content: "TIP 로그" },
+      { id: "RACB_LOG", content: "RACB 로그" },
+      { id: "CTTTM_LOG", content: "CTTTM 로그" },
+    ]);
+
+    const timelineItems = items.map((log) => ({
+      id: log.id,
+      group: log.logType,
+      start: log.eventTime,
+      end: log.endTime || undefined,
+      content: log.eventType,
+      title: log.comment,
+    }));
+
+    const timeline = new Timeline(containerRef.current, timelineItems, groups, {
+      stack: true,
+      orientation: "top",
+    });
+
+    return () => timeline.destroy();
+  }, [items]);
+
+  return <div ref={containerRef} style={{ height: "400px" }} />;
+}
+
+
 ----- C:\Users\pjw75\Desktop\react-prc\src\context\SelectionContext.jsx -----
 
-// src/context/SelectionContext.jsx
+// ✅ 커스텀 훅 내보내기
+import { createContext, useState, useContext } from "react";
 
-import React, { createContext, useState, useContext } from "react";
 const SelectionContext = createContext();
 
 export const useSelection = () => useContext(SelectionContext);
 
 export const SelectionProvider = ({ children }) => {
   const [selectedRow, setSelectedRow] = useState(null);
-  // ✅ 추가: 선택 출처 관리
-  const [selectionSource, setSelectionSource] = useState(null); // "table" or "timeline"
+  const [selectionSource, setSelectionSource] = useState(null);
 
-  // 확장된 setter
+  const [selectedLineId, setSelectedLineId] = useState("");
+  const [selectedSDWTId, setSelectedSDWTId] = useState("");
+  const [selectedEQPId, setSelectedEQPId] = useState("");
+
   const selectRow = (rowId, source = null) => {
     setSelectedRow(rowId);
     setSelectionSource(source);
@@ -1367,7 +1454,17 @@ export const SelectionProvider = ({ children }) => {
 
   return (
     <SelectionContext.Provider
-      value={{ selectedRow, setSelectedRow: selectRow, selectionSource }}
+      value={{
+        selectedRow,
+        setSelectedRow: selectRow,
+        selectionSource,
+        selectedLineId,
+        setSelectedLineId,
+        selectedSDWTId,
+        setSelectedSDWTId,
+        selectedEQPId,
+        setSelectedEQPId,
+      }}
     >
       {children}
     </SelectionContext.Provider>
@@ -1405,44 +1502,6 @@ export const TimelineProvider = ({ children }) => {
 };
 
 
------ C:\Users\pjw75\Desktop\react-prc\src\hooks\useCTTTMLog.js -----
-
-import { useQuery } from "@tanstack/react-query";
-import * as api from "../api/historyAPI";
-
-/**
- * 선택된 EQP의 CTTTM 로그 데이터를 불러오는 훅.
- * - eqpId가 있을 때만 동작
- * - 캐시 유지 시간: 30분
- */
-export const useCtttmLog = (eqpId) =>
-  useQuery({
-    queryKey: ["ctttm", eqpId],
-    queryFn: () => api.fetchCTTTMLog(eqpId).then((r) => r.data),
-    enabled: !!eqpId,
-    staleTime: 1000 * 60 * 30,
-  });
-
-
------ C:\Users\pjw75\Desktop\react-prc\src\hooks\useEqpStatusLog.js -----
-
-import { useQuery } from "@tanstack/react-query";
-import * as api from "../api/historyAPI";
-
-/**
- * 선택된 EQP의 가동 상태(RUN) 데이터를 불러오는 훅.
- * - eqpId가 있을 때만 동작
- * - 캐시 유지 시간: 30분
- */
-export const useEqpStatusLog = (eqpId) =>
-  useQuery({
-    queryKey: ["run", eqpId],
-    queryFn: () => api.fetchEQPStatus(eqpId).then((r) => r.data),
-    enabled: !!eqpId,
-    staleTime: 1000 * 60 * 30,
-  });
-
-
 ----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useLineQueries.js -----
 
 import { useQuery } from "@tanstack/react-query";
@@ -1455,10 +1514,9 @@ import * as api from "../api/historyAPI";
 export const useLines = () =>
   useQuery({
     queryKey: ["lines"],
-    queryFn: () => api.fetchLines().then((r) => r.data),
+    queryFn: () => api.fetchLines(),
     staleTime: 1000 * 60 * 30,
   });
-
 /**
  * 선택된 라인의 "설비(EQP) 목록"을 불러오는 훅.
  * - enabled: 라인ID가 있을 때만 동작
@@ -1467,28 +1525,23 @@ export const useLines = () =>
 export const useEquipments = (lineId, sdwtId, enabled) =>
   useQuery({
     queryKey: ["equipments", lineId, sdwtId],
-    queryFn: () => api.fetchEquipments(lineId, sdwtId).then((r) => r.data),
+    queryFn: () => api.fetchEquipments(lineId, sdwtId),
     enabled,
     staleTime: 1000 * 60 * 30,
   });
 
 
------ C:\Users\pjw75\Desktop\react-prc\src\hooks\useRACBLog.js -----
+----- C:\Users\pjw75\Desktop\react-prc\src\hooks\useLogQueries.js -----
 
 import { useQuery } from "@tanstack/react-query";
-import * as api from "../api/historyAPI";
+import { fetchLogs } from "../api/historyAPI";
 
-/**
- * 선택된 EQP의 EVENT 로그 데이터를 불러오는 커스텀 훅.
- * - eqpId가 있을 때만 동작 (enabled: !!eqpId)
- * - 캐시 유지 시간: 30분
- */
-export const useRacbLog = (eqpId) =>
+export const useLogs = ({ lineId, sdwtId, eqpId }, enabled) =>
   useQuery({
-    queryKey: ["event", eqpId],
-    queryFn: () => api.fetchRACBLog(eqpId).then((r) => r.data),
-    enabled: !!eqpId,
-    staleTime: 1000 * 60 * 30,
+    queryKey: ["logs", lineId, sdwtId, eqpId],
+    queryFn: () => fetchLogs({ lineId, sdwtId, eqpId }),
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5분 캐시 유지
   });
 
 
@@ -1500,27 +1553,8 @@ import * as api from "../api/historyAPI";
 export const useSDWTQueries = (lineId) =>
   useQuery({
     queryKey: ["sdwt", lineId],
-    queryFn: () => api.fetchSDWT(lineId).then((r) => r.data),
+    queryFn: () => api.fetchSDWT(lineId),
     enabled: !!lineId,
-    staleTime: 1000 * 60 * 30,
-  });
-
-
------ C:\Users\pjw75\Desktop\react-prc\src\hooks\useTIPLog.js -----
-
-import { useQuery } from "@tanstack/react-query";
-import * as api from "../api/historyAPI";
-
-/**
- * 선택된 EQP의 공정 단계(STEP) 데이터를 불러오는 훅.
- * - eqpId가 있을 때만 동작
- * - 캐시 유지 시간: 30분
- */
-export const useTipLog = (eqpId) =>
-  useQuery({
-    queryKey: ["step", eqpId],
-    queryFn: () => api.fetchTIPLog(eqpId).then((r) => r.data),
-    enabled: !!eqpId,
     staleTime: 1000 * 60 * 30,
   });
 
@@ -1529,18 +1563,14 @@ export const useTipLog = (eqpId) =>
 
 // src/pages/TimelinePage.jsx
 import React, { useState, useMemo } from "react";
+import { useLogs } from "../hooks/useLogQueries";
 import LineSelector from "../components/selectors/LineSelector";
+import SDWTSelector from "../components/selectors/SDWTSelector";
 import EqpSelector from "../components/selectors/EqpSelector";
 import TimelineBoard from "../components/timeline/TimelineBoard";
 import CombinedDataTable from "../components/tables/CombinedDataTable";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { useEqpStatusLog } from "../hooks/useEqpStatusLog";
-import { useTipLog } from "../hooks/useTIPLog";
-import { useRacbLog } from "../hooks/useRacbLog";
-import { useCtttmLog } from "../hooks/useCTTTMLog";
-import { ChartBarIcon } from "@heroicons/react/24/outline";
-import SDWTSelector from "../components/selectors/SDWTSelector";
-import { makeItemId } from "../utils/timelineUtils"; // 파일 위치에 따라 경로 조정
+import { makeItemId } from "../utils/timelineUtils";
 
 const DATA_TYPES = {
   EQP: "EQP_LOG",
@@ -1549,10 +1579,13 @@ const DATA_TYPES = {
   CTTTM: "CTTTM_LOG",
 };
 
-const TimelinePage = () => {
-  const [lineId, setLineId] = useState(null);
-  const [eqpId, setEqpId] = useState(null);
-  const [sdwtId, setSdwtId] = useState(null);
+export default function TimelinePage() {
+  // ─── 1) 드릴다운 선택 상태
+  const [lineId, setLineId] = useState(""); // ex) "L001"
+  const [sdwtId, setSdwtId] = useState(""); // ex) "S001"
+  const [eqpId, setEqpId] = useState(""); // ex) "E001"
+
+  // ─── 2) 각 로그 타입별 필터 체크박스 상태
   const [typeFilters, setTypeFilters] = useState({
     [DATA_TYPES.EQP]: true,
     [DATA_TYPES.TIP]: true,
@@ -1560,80 +1593,86 @@ const TimelinePage = () => {
     [DATA_TYPES.CTTTM]: true,
   });
 
-  const { data: runData = [], isLoading: l1 } = useEqpStatusLog(eqpId);
-  const { data: stepData = [], isLoading: l2 } = useTipLog(eqpId);
-  const { data: eventData = [], isLoading: l3 } = useRacbLog(eqpId);
-  const { data: ctttmData = [], isLoading: l4 } = useCtttmLog(eqpId); // ⬅️ 추가
-  const isLoading = l1 || l2 || l3 || l4;
+  // ─── 3) useLogs 훅으로 한번에 모든 로그를 가져옴
+  //     /logs?lineId=...&sdwtId=...&eqpId=...
+  const enabled = Boolean(lineId && eqpId); // eqpId 선택 시에만 fetch
+  const {
+    data: logs = [],
+    isLoading: logsLoading,
+    isError: logsError,
+  } = useLogs({ lineId, sdwtId, eqpId }, enabled);
 
-  const combinedAndSortedData = useMemo(() => {
-    if (isLoading || !eqpId) return [];
+  // ─── 4) 로딩/오류 처리
+  if (logsError) {
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <p className="text-red-500">로그를 불러오는 중 오류가 발생했습니다.</p>
+      </div>
+    );
+  }
 
-    const transformedRun = runData.map((item) => ({
-      id: makeItemId(DATA_TYPES.EQP, item.timestamp),
-      originalTimestamp: new Date(item.timestamp),
-      displayTimestamp: new Date(item.timestamp).toLocaleString(),
-      type: DATA_TYPES.EQP,
-      info1: item.status,
-      info2: "",
-      info3: "",
+  // ─── 5) “원본 로그 배열”을 logType별로 분리
+  //      logs: Array<BaseLog>
+  const logsByType = useMemo(() => {
+    const grouped = {
+      EQP_LOG: [],
+      TIP_LOG: [],
+      RACB_LOG: [],
+      CTTTM_LOG: [],
+    };
+    for (const log of logs) {
+      if (grouped[log.logType]) {
+        grouped[log.logType].push(log);
+      }
+    }
+    return grouped;
+  }, [logs]);
+
+  // ─── 6) 테이블용 “가공된 데이터 배열” 생성
+  //     CombinedDataTable에 넘겨줄 shape:
+  //     { id, displayTimestamp, logType, info1, info2, info3 }
+  const tableData = useMemo(() => {
+    if (!enabled || logsLoading) return [];
+    return (
+      logs
+        .map((log) => {
+          // id는 이미 백엔드가 “TIP_LOG-0, EQP_LOG-0, …” 형태로 내려줬으므로 그대로 사용 가능합니다.
+          // displayTimestamp만 보기 좋게 포맷
+          const ts = new Date(log.eventTime);
+          return {
+            id: log.id,
+            displayTimestamp: ts.toLocaleString("ko-KR", { hour12: false }),
+            logType: log.logType,
+            info1: log.eventType,
+            info2: log.operator || "-",
+            info3: log.comment || "",
+          };
+        })
+        //  최신순으로 정렬 (원한다면 오름차순/내림차순 바꿔주세요)
+        .sort((a, b) => {
+          return new Date(b.displayTimestamp) - new Date(a.displayTimestamp);
+        })
+        //  체크박스 필터링
+        .filter((row) => typeFilters[row.logType])
+    );
+  }, [logs, logsLoading, enabled, typeFilters]);
+
+  // ─── 7) 필터 체크박스 변경 핸들러
+  const handleFilterChange = (e) => {
+    const { name, checked } = e.target;
+    setTypeFilters((prev) => ({
+      ...prev,
+      [name]: checked,
     }));
-
-    const transformedStep = stepData.map((item) => ({
-      id: makeItemId(DATA_TYPES.TIP, item.start_time),
-      originalTimestamp: new Date(item.start_time),
-      displayTimestamp: new Date(item.start_time).toLocaleString(),
-      type: DATA_TYPES.TIP,
-      info1: item.step,
-      info2: item.ppid,
-      info3: item.state,
-    }));
-
-    const transformedEvent = eventData.map((item) => ({
-      id: makeItemId(DATA_TYPES.RACB, item.occurred_at),
-      originalTimestamp: new Date(item.occurred_at),
-      displayTimestamp: new Date(item.occurred_at).toLocaleString(),
-      type: DATA_TYPES.RACB,
-      info1: item.event_type,
-      info2: item.comment,
-      info3: "",
-    }));
-
-    const transformedCTTTM = ctttmData.map((item) => ({
-      id: makeItemId(DATA_TYPES.CTTTM, item.occurred_at),
-      originalTimestamp: new Date(item.occurred_at),
-      displayTimestamp: new Date(item.occurred_at).toLocaleString(),
-      type: DATA_TYPES.CTTTM,
-      info1: item.event_type,
-      info2: item.comment,
-      info3: "",
-    }));
-
-    const allData = [
-      ...transformedRun,
-      ...transformedStep,
-      ...transformedEvent,
-      ...transformedCTTTM, // ✅ 추가
-    ];
-
-    allData.sort((a, b) => b.originalTimestamp - a.originalTimestamp);
-    return allData;
-  }, [runData, stepData, eventData, isLoading, eqpId]);
-
-  const filteredData = useMemo(() => {
-    return combinedAndSortedData.filter((item) => typeFilters[item.type]);
-  }, [combinedAndSortedData, typeFilters]);
-
-  const handleFilterChange = (event) => {
-    const { name, checked } = event.target;
-    setTypeFilters((prev) => ({ ...prev, [name]: checked }));
   };
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-120px)] gap-4 mt-4">
-      {/* 좌측: 필터/선택/테이블 포함 */}
+      {/* ──────────────────────────────────────────────────────────────────
+          🟢 왼쪽 40% 영역: 선택기 + 체크박스 + 통합 로그 테이블
+      ─────────────────────────────────────────────────────────────────── */}
       <div className="lg:w-[40%] flex flex-col gap-4 h-full">
-        {/* 상단 UI (타이틀 + 선택기 + 체크박스) */}
+        {/* ——— 상단: 타이틀 / Line→SDWT→EQP 드릴다운 / 체크박스 */}
         <div className="p-4 bg-white dark:bg-slate-800 shadow rounded-xl">
           <h2 className="text-lg font-bold mb-3 text-slate-900 dark:text-white">
             📊 EQP 타임라인 뷰어
@@ -1643,7 +1682,10 @@ const TimelinePage = () => {
             <SDWTSelector
               lineId={lineId}
               sdwtId={sdwtId}
-              setSdwtId={setSdwtId}
+              setSdwtId={(id) => {
+                setSdwtId(id);
+                setEqpId(""); // SDWT 바뀌면 하위 EQP 초기화
+              }}
             />
             <EqpSelector
               lineId={lineId}
@@ -1653,77 +1695,90 @@ const TimelinePage = () => {
             />
           </div>
           <div className="flex gap-3 flex-wrap">
-            {Object.keys(DATA_TYPES).map((typeKey) => (
+            {Object.entries(DATA_TYPES).map(([key, val]) => (
               <label
-                key={typeKey}
+                key={val}
                 className="flex items-center gap-1 text-sm text-slate-700 dark:text-slate-300"
               >
                 <input
                   type="checkbox"
-                  name={DATA_TYPES[typeKey]}
-                  checked={typeFilters[DATA_TYPES[typeKey]]}
+                  name={val}
+                  checked={typeFilters[val]}
                   onChange={handleFilterChange}
                   className="rounded border-gray-300 dark:border-slate-600"
                 />
-                {typeKey}
+                {key}
               </label>
             ))}
           </div>
         </div>
 
-        {/* 통합 로그 테이블 */}
+        {/* ——— 중간: “통합 로그 테이블” */}
         <div className="flex-1 overflow-auto bg-white dark:bg-slate-800 shadow rounded-xl p-3">
-          {eqpId && !isLoading ? (
-            <CombinedDataTable data={filteredData} />
-          ) : !eqpId ? (
+          {!eqpId && !logsLoading ? (
             <p className="text-center text-slate-600 dark:text-slate-400">
-              EQP를 선택하세요.
+              먼저 EQP를 선택해주세요.
+            </p>
+          ) : logsLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <LoadingSpinner />
+            </div>
+          ) : tableData.length === 0 ? (
+            <p className="text-center text-slate-600 dark:text-slate-400">
+              표시할 로그가 없습니다.
             </p>
           ) : (
-            <LoadingSpinner />
+            <CombinedDataTable data={tableData} />
           )}
         </div>
       </div>
 
-      {/* 우측: 타임라인 전체 사용 */}
+      {/* ──────────────────────────────────────────────────────────────────
+          🟢 오른쪽 60% 영역: 타임라인 전체 사용
+      ─────────────────────────────────────────────────────────────────── */}
       <div className="lg:w-[60%] h-full overflow-auto bg-white dark:bg-slate-800 shadow rounded-xl p-4">
-        {eqpId && !isLoading ? (
-          <TimelineBoard eqpId={eqpId} />
-        ) : !eqpId ? (
+        {!eqpId && !logsLoading ? (
           <p className="text-center text-slate-600 dark:text-slate-400 py-20">
             타임라인을 표시하려면 EQP를 선택하세요.
           </p>
+        ) : logsLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner />
+          </div>
         ) : (
-          <LoadingSpinner />
+          // logsByType를 통째로 TimelineBoard에 넘겨줍니다.
+          <TimelineBoard dataMap={logsByType} />
         )}
       </div>
     </div>
   );
-};
-
-export default TimelinePage;
+}
 
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\styles\timeline.css -----
 
 @import "tailwindcss";
 
-/* vis-timeline용 커스텀 스타일링 */
-/* 전체 타임라인 영역 기본 마진 */
+/* ─────────────────────────────────────────────────────────────────────────
+   vis-timeline용 커스텀 스타일링 전체 (포인트형·레인지형 동일 하이라이트)
+───────────────────────────────────────────────────────────────────────── */
+
+/* 1) 전체 타임라인 영역 기본 마진 */
 .timeline-container {
   margin-bottom: 16px;
 }
 
-/* 각 vis-item(타임라인 아이템)에 Tailwind 색상 스타일 적용 */
+/* 2) vis-item(타임라인 아이템) 공통 스타일 */
 .vis-item {
   @apply border border-transparent;
   color: #334155; /* slate-800 */
   border-radius: 0 !important;
   margin-right: -1px;
   box-shadow: none !important;
+  pointer-events: all !important; /* 클릭 허용 (range, point 모두) */
 }
 
-/* 주요 상태별 색상 (Tailwind 색상 기준, groupConfig와 일치시켜야 함) */
+/* 3) 주요 상태별 색상 (Tailwind 기준, groupConfig와 일치) */
 .vis-item.bg-red-500    { @apply bg-red-500 border-red-600; }
 .vis-item.bg-green-500  { @apply bg-green-500 border-green-600; }
 .vis-item.bg-blue-500   { @apply bg-blue-500 border-blue-600; }
@@ -1735,129 +1790,128 @@ export default TimelinePage;
 .vis-item.bg-green-600  { @apply bg-green-600 border-green-700; }
 .vis-item.bg-amber-600  { @apply bg-amber-600 border-amber-700; }
 
-/* 다크모드에서 아이템 텍스트 색상 */
+/* 4) Dark 모드에서 아이템 텍스트 색상 */
 .dark .vis-item {
   color: #f1f5f9; /* slate-100 */
 }
 
-/* 다크모드: 시간축(라벨/텍스트) 색상 */
-.dark .vis-time-axis .vis-text,
-.dark .vis-time-axis .vis-label {
-  color: #f1f5f9 !important;
+/* 5) 레인지(range) 아이템(범위형) 공통 스타일 */
+.vis-item.vis-range {
+  pointer-events: all !important; /* 클릭 허용 */
+  min-height: 20px !important;    /* 클릭 영역 확보 */
 }
 
-/* 라이트모드(기본) 시간축 색상 */
-.vis-time-axis .vis-text,
-.vis-time-axis .vis-label {
-  color: #334155;
+/* 6) 포인트(point) 아이템(단일 시점) 공통 스타일 */
+/* (기본적으로 포인트형은 높이가 충분하므로 min-height 지정은 생략 가능합니다) */
+.vis-item.vis-point {
+  pointer-events: all !important;
 }
 
-/* 선택된 아이템(클릭 시 강조) */
-.vis-item.selected {
-  @apply border-2 border-amber-500;
-  z-index: 10;
+/* 7) 모든 선택된(vis-selected) 아이템(포인트·레인지) 강조 스타일 */
+.vis-item.vis-selected {
+  background-color: rgba(251, 146, 60, 0.2) !important; /* amber-400 반투명 */
+  border: 2px dashed #fb923c !important;                /* 점선 테두리 (amber-400) */
+  filter: brightness(1.1) !important;                    /* 약간 밝기 증가 */
+  z-index: 10 !important;                                /* 다른 레이어 위로 배치 */
 }
 
-/* 이미 있는 .vis-item.selected 밑에 바로 이어서 넣어 주세요 */
-.vis-item.vis-range.selected {
-  outline: 3px dashed #fb923c !important;  /* amber-400 */
-  outline-offset: -1px;
-  filter: brightness(1.2);                 /* 살짝 강조 */
-}
-
-
+/* 8) 시간축(라벨/텍스트) 공통 */
 .vis-time-axis .vis-text,
 .vis-time-axis .vis-label {
   font-size: 13px !important;
+  color: #334155; /* slate-800 */
 }
 
-/* 다크모드에서 타임라인 그룹 이름(라벨)을 흰색으로 */
+/* 9) Dark 모드에서 시간축(라벨/텍스트) */
 .dark .vis-time-axis .vis-text,
 .dark .vis-time-axis .vis-label {
-  color: #f1f5f9 !important;
+  color: #f1f5f9 !important; /* slate-100 */
 }
 
+/* 10) Dark 모드에서 그룹 라벨 텍스트 */
 .dark .vis-group .vis-label,
 .dark .vis-group .vis-inner {
-  color: #f1f5f9 !important;
+  color: #f1f5f9 !important; /* slate-100 */
 }
 
-/* 기본 */
+/* 11) 기본 그룹 라벨 텍스트 */
 .vis-label.custom-group-label {
   color: #334155; /* slate-800 */
 }
 
-/* 다크모드 */
+/* 12) Dark 모드 기본 그룹 라벨 텍스트 */
 .dark .vis-label.custom-group-label {
   color: #f1f5f9 !important; /* slate-100 */
 }
 
+/* 13) Slim 스크롤바 스타일 (테이블 영역) */
+.table-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
+/* 14) 라이트 모드: 스크롤바 트랙 */
+.table-scroll::-webkit-scrollbar-track {
+  background-color: #e2e8f0; /* slate-200 */
+  border-radius: 10px;
+}
+
+/* 15) 라이트 모드: 스크롤바 thumb */
+.table-scroll::-webkit-scrollbar-thumb {
+  background-color: #94a3b8; /* slate-400 */
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 16) Dark 모드: 스크롤바 트랙 */
+.dark .table-scroll::-webkit-scrollbar-track {
+  background-color: #1e293b; /* slate-800 */
+}
+
+/* 17) Dark 모드: 스크롤바 thumb */
+.dark .table-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569; /* slate-600 */
+  border: 1px solid #1e293b;
+}
+
+/* 18) Dark 모드: 스크롤바 thumb Hover */
+.dark .table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b; /* slate-500 */
+}
 
 
 ----- C:\Users\pjw75\Desktop\react-prc\src\utils\timelineMeta.js -----
 
 /**
- * 타임라인 그룹별로 "옵션/색상/주요 컬럼"을 정의한 메타데이터 객체입니다.
- * - groupConfig[KEY]
- *    - type: "range" | "point"
- *    - options: vis-timeline에 넘길 옵션(기본값)
- *    - stateColors: 각 상태별 Tailwind 색상 클래스
- *    - columns: 시간, 상태, 설명(코멘트) 컬럼명
+ * 각 로그 타입(logType)에 따라 색상 클래스를 정의합니다.
+ * 이 설정은 vis-timeline의 item className에 적용됩니다.
  */
+
 export const groupConfig = {
   EQP_LOG: {
-    type: "range",
-    options: {},
     stateColors: {
       RUN: "bg-blue-600 border-blue-700",
       IDLE: "bg-yellow-600 border-yellow-700",
       PM: "bg-green-600 border-green-700",
       DOWN: "bg-red-600 border-red-700",
     },
-    columns: {
-      time: "timestamp",
-      state: "status",
-      comment: "status",
-    },
   },
   TIP_LOG: {
-    type: "range",
-    options: {},
     stateColors: {
       OPEN: "bg-blue-600 border-blue-700",
       CLOSE: "bg-red-600 border-red-700",
     },
-    columns: {
-      time: "start_time",
-      state: "state",
-      comment: "step",
-    },
   },
   RACB_LOG: {
-    type: "point",
-    options: {},
     stateColors: {
       ALARM: "bg-red-600 border-red-700",
       WARN: "bg-amber-600 border-amber-700",
     },
-    columns: {
-      time: "occurred_at",
-      state: "event_type",
-      comment: "comment",
-    },
   },
   CTTTM_LOG: {
-    type: "point",
-    options: {},
     stateColors: {
       TTM_FAIL: "bg-red-600 border-red-700",
       TTM_WARN: "bg-yellow-600 border-yellow-700",
-    },
-    columns: {
-      time: "occurred_at",
-      state: "event_type",
-      comment: "comment",
     },
   },
 };
@@ -1890,45 +1944,42 @@ export const makeItemId = (group, time) => {
 };
 
 /**
- * vis-timeline 데이터 변환 함수 (모든 group에서 makeItemId만 사용!)
+ * 통일된 BaseLog 구조의 로그 배열을 vis-timeline 아이템으로 변환
+ * @param {string} logType - 예: EQP_LOG, TIP_LOG 등
+ * @param {BaseLog[]} data - 해당 로그 타입의 데이터 배열
+ * @returns vis-timeline items[]
  */
-export const processData = (groupKey, data) => {
-  const cfg = groupConfig[groupKey];
-  const { columns, stateColors } = cfg;
+export const processData = (logType, data) => {
+  const cfg = groupConfig[logType];
+  if (!cfg) {
+    console.warn(`[processData] 그룹 설정이 없습니다: ${logType}`);
+    return [];
+  }
 
   return data
-    .filter((row) => row && row[columns.time])
-    .map((row) => {
-      const start = new Date(row[columns.time]);
-      const next = data[data.indexOf(row) + 1];
-      // 마지막 아이템은 range.max까지 끝이 연장됩니다.
-      const end = next
-        ? new Date(next[columns.time])
-        : new Date(
-            start.getFullYear(),
-            start.getMonth(),
-            start.getDate(),
-            23,
-            59,
-            59
-          );
-      const state = row[columns.state];
-      const colorCls = stateColors[state] ?? "bg-gray-300";
-      const groupId =
-        columns.groupBy && row[columns.groupBy]
-          ? row[columns.groupBy]
-          : groupKey;
+    .filter((log) => log && log.eventTime)
+    .map((log) => {
+      const start = new Date(log.eventTime);
+      const end = log.endTime ? new Date(log.endTime) : start;
+      const isRange = !!log.endTime;
+      const state = log.eventType;
+      const colorCls = cfg.stateColors[state] || "bg-gray-300";
 
-      // point 타입일 때 end=start로
-      const isPoint = cfg.type === "point";
       return {
-        id: makeItemId(groupKey, row[columns.time]),
-        group: groupId,
-        content: cfg.type === "range" ? undefined : row[columns.comment],
+        id: log.id,
+        group: logType,
+        content: log.comment || "", // 간단한 주석 표시
         start,
-        end: isPoint ? start : end, // <-- 여기! point도 end=start!
-        type: cfg.type,
+        end,
+        type: isRange ? "range" : "point",
         className: colorCls,
+        title: [
+          log.comment,
+          log.operator ? `👤 ${log.operator}` : null,
+          log.url ? `🔗 ${log.url}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
       };
     });
 };
@@ -1958,9 +2009,11 @@ export const baseOptions = (min, max) => ({
 export const calcRange = (...arrs) => {
   const ts = arrs
     .flat()
-    .map((d) =>
-      new Date(d.timestamp || d.start_time || d.occurred_at).getTime()
-    );
+    .flatMap((d) => [
+      new Date(d.eventTime).getTime(),
+      d.endTime ? new Date(d.endTime).getTime() : undefined,
+    ])
+    .filter(Boolean);
   if (ts.length === 0) return { min: new Date(), max: new Date() };
   const min = new Date(Math.min(...ts));
   const max = new Date(Math.max(...ts));

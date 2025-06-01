@@ -1,16 +1,18 @@
-// src/context/SelectionContext.jsx
+// ✅ 커스텀 훅 내보내기
+import { createContext, useState, useContext } from "react";
 
-import React, { createContext, useState, useContext } from "react";
 const SelectionContext = createContext();
 
 export const useSelection = () => useContext(SelectionContext);
 
 export const SelectionProvider = ({ children }) => {
   const [selectedRow, setSelectedRow] = useState(null);
-  // ✅ 추가: 선택 출처 관리
-  const [selectionSource, setSelectionSource] = useState(null); // "table" or "timeline"
+  const [selectionSource, setSelectionSource] = useState(null);
 
-  // 확장된 setter
+  const [selectedLineId, setSelectedLineId] = useState("");
+  const [selectedSDWTId, setSelectedSDWTId] = useState("");
+  const [selectedEQPId, setSelectedEQPId] = useState("");
+
   const selectRow = (rowId, source = null) => {
     setSelectedRow(rowId);
     setSelectionSource(source);
@@ -18,7 +20,17 @@ export const SelectionProvider = ({ children }) => {
 
   return (
     <SelectionContext.Provider
-      value={{ selectedRow, setSelectedRow: selectRow, selectionSource }}
+      value={{
+        selectedRow,
+        setSelectedRow: selectRow,
+        selectionSource,
+        selectedLineId,
+        setSelectedLineId,
+        selectedSDWTId,
+        setSelectedSDWTId,
+        selectedEQPId,
+        setSelectedEQPId,
+      }}
     >
       {children}
     </SelectionContext.Provider>

@@ -10,15 +10,20 @@ const CombinedDataTable = ({ data }) => {
   const rowRefs = useRef({});
 
   useEffect(() => {
-    if (selectedRow && rowRefs.current[selectedRow]) {
+    if (
+      selectedRow &&
+      Object.prototype.hasOwnProperty.call(rowRefs.current, selectedRow)
+    ) {
       rowRefs.current[selectedRow].scrollIntoView({
         behavior: "smooth",
         block: "center",
       });
     } else if (selectedRow) {
-      // 렌더 타이밍 문제로 100ms 후 재시도
+      // 렌더 타이밍 문제로 재시도
       setTimeout(() => {
-        if (rowRefs.current[selectedRow]) {
+        if (
+          Object.prototype.hasOwnProperty.call(rowRefs.current, selectedRow)
+        ) {
           rowRefs.current[selectedRow].scrollIntoView({
             behavior: "smooth",
             block: "center",
@@ -40,9 +45,10 @@ const CombinedDataTable = ({ data }) => {
   // 테이블 컬럼 정의
   const columns = [
     { header: "시간", accessor: "displayTimestamp" },
-    { header: "타입", accessor: "type" },
+    { header: "타입", accessor: "logType" },
     { header: "정보 1", accessor: "info1" },
     { header: "정보 2", accessor: "info2" },
+    { header: "지속(초)", accessor: "duration" },
   ];
 
   return (
